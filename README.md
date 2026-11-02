@@ -195,3 +195,11 @@ notice (in the source, and in the documentation of builds you distribute).
 Code from other projects keeps its own licence and notices; see
 [THIRD_PARTY.md](THIRD_PARTY.md). The licence does not cover Daytona USA
 itself: the ROMs and the code generated from them are never distributed.
+
+## Version numbers
+
+The app and each game core are versioned separately. The release number on this
+repository (for example v1.0.0) is a snapshot label: it means "as shipped with
+Arcade Foundry: Insert Coin 1.0.0". Every game core also has its own x.y.z
+version (shown in the app), which can be higher or lower than the release number.
+A core's major number only changes when its saves stop carrying over.
