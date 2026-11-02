@@ -1,0 +1,323 @@
+# Wing War: two coins (2 credits to play), start, the plane and mission picked with the gun, then flying:
+# the stick both ways, the throttle, the gun held and tapped, missiles and smoke.
+600-605 coin=1
+640-645 coin=1
+700-705 start=1
+760-765 gun=1
+820-825 gun=1
+880-885 gun=1
+940-945 gun=1
+1000-1005 gun=1
+1060-1065 gun=1
+1200-1289 stickx=128 sticky=80 throttle=255
+1200-1260 gun=1
+1230-1235 missile=1
+1290-1379 stickx=40 sticky=216 throttle=128
+1290-1350 gun=1
+1340-1345 smoke=1
+1380-1469 stickx=176 sticky=40 throttle=1
+1470-1559 stickx=216 sticky=176 throttle=1
+1500-1505 missile=1
+1560-1649 stickx=80 sticky=216 throttle=1
+1560-1620 gun=1
+1650-1739 stickx=216 sticky=80 throttle=200
+1650-1710 gun=1
+1740-1829 stickx=176 sticky=216 throttle=255
+1830-1919 stickx=80 sticky=80 throttle=128
+1830-1890 gun=1
+1920-2009 stickx=176 sticky=128 throttle=1
+1920-1980 gun=1
+2010-2099 stickx=176 sticky=176 throttle=1
+2040-2045 missile=1
+2100-2189 stickx=128 sticky=128 throttle=200
+2100-2160 gun=1
+2190-2279 stickx=128 sticky=176 throttle=1
+2190-2250 gun=1
+2280-2369 stickx=176 sticky=128 throttle=255
+2370-2459 stickx=216 sticky=40 throttle=255
+2370-2430 gun=1
+2460-2549 stickx=176 sticky=176 throttle=1
+2460-2520 gun=1
+2550-2639 stickx=176 sticky=216 throttle=200
+2640-2729 stickx=80 sticky=80 throttle=1
+2640-2700 gun=1
+2670-2675 missile=1
+2730-2819 stickx=216 sticky=80 throttle=200
+2730-2790 gun=1
+2760-2765 missile=1
+2820-2909 stickx=128 sticky=80 throttle=1
+2820-2880 gun=1
+2910-2999 stickx=216 sticky=176 throttle=255
+2910-2970 gun=1
+2940-2945 missile=1
+3000-3089 stickx=40 sticky=80 throttle=255
+3000-3060 gun=1
+3050-3055 smoke=1
+3070-3075 vr2=1
+3090-3179 stickx=216 sticky=40 throttle=200
+3090-3150 gun=1
+3120-3125 missile=1
+3180-3269 stickx=128 sticky=128 throttle=200
+3180-3240 gun=1
+3210-3215 missile=1
+3270-3359 stickx=176 sticky=176 throttle=200
+3270-3330 gun=1
+3300-3305 missile=1
+3360-3449 stickx=80 sticky=216 throttle=1
+3360-3420 gun=1
+3450-3539 stickx=40 sticky=216 throttle=200
+3540-3629 stickx=128 sticky=80 throttle=200
+3630-3719 stickx=80 sticky=216 throttle=128
+3720-3809 stickx=216 sticky=176 throttle=200
+3810-3899 stickx=80 sticky=216 throttle=200
+3810-3870 gun=1
+3900-3989 stickx=128 sticky=40 throttle=128
+3900-3960 gun=1
+3990-4079 stickx=216 sticky=40 throttle=255
+4080-4169 stickx=40 sticky=176 throttle=128
+4080-4140 gun=1
+4110-4115 missile=1
+4170-4259 stickx=176 sticky=176 throttle=255
+4200-4205 missile=1
+4260-4349 stickx=40 sticky=80 throttle=255
+4290-4295 missile=1
+4350-4439 stickx=128 sticky=80 throttle=128
+4350-4410 gun=1
+4440-4529 stickx=80 sticky=176 throttle=128
+4470-4475 missile=1
+4530-4619 stickx=80 sticky=216 throttle=200
+4530-4590 gun=1
+4620-4709 stickx=128 sticky=176 throttle=255
+4710-4799 stickx=216 sticky=40 throttle=255
+4800-4889 stickx=80 sticky=176 throttle=1
+4800-4860 gun=1
+4890-4979 stickx=40 sticky=216 throttle=1
+4890-4950 gun=1
+4920-4925 missile=1
+4980-5069 stickx=216 sticky=40 throttle=1
+4980-5040 gun=1
+5070-5159 stickx=128 sticky=176 throttle=255
+5070-5130 gun=1
+5100-5105 missile=1
+5160-5249 stickx=128 sticky=216 throttle=128
+5190-5195 missile=1
+5250-5339 stickx=40 sticky=80 throttle=255
+5250-5310 gun=1
+5340-5429 stickx=80 sticky=128 throttle=128
+5340-5400 gun=1
+5370-5375 missile=1
+5430-5519 stickx=40 sticky=176 throttle=255
+5430-5490 gun=1
+5520-5609 stickx=216 sticky=176 throttle=200
+5520-5580 gun=1
+5570-5575 smoke=1
+5610-5699 stickx=128 sticky=216 throttle=255
+5610-5670 gun=1
+5640-5645 missile=1
+5700-5789 stickx=216 sticky=40 throttle=1
+5790-5879 stickx=128 sticky=128 throttle=1
+5820-5825 missile=1
+5880-5969 stickx=128 sticky=176 throttle=128
+5880-5940 gun=1
+5970-6059 stickx=128 sticky=40 throttle=128
+5970-6030 gun=1
+6000-6005 missile=1
+6060-6149 stickx=128 sticky=40 throttle=128
+6060-6120 gun=1
+6150-6239 stickx=216 sticky=176 throttle=200
+6150-6210 gun=1
+6180-6185 missile=1
+6240-6329 stickx=80 sticky=128 throttle=1
+6240-6300 gun=1
+6330-6419 stickx=80 sticky=128 throttle=255
+6330-6390 gun=1
+6360-6365 missile=1
+6400-6405 vr3=1
+6420-6509 stickx=40 sticky=40 throttle=1
+6510-6599 stickx=176 sticky=40 throttle=255
+6510-6570 gun=1
+6600-6689 stickx=128 sticky=80 throttle=128
+6600-6660 gun=1
+6690-6779 stickx=176 sticky=128 throttle=1
+6720-6725 missile=1
+6780-6869 stickx=176 sticky=80 throttle=1
+6780-6840 gun=1
+6870-6959 stickx=128 sticky=216 throttle=128
+6870-6930 gun=1
+6900-6905 missile=1
+6960-7049 stickx=40 sticky=128 throttle=200
+7050-7139 stickx=128 sticky=80 throttle=200
+7050-7110 gun=1
+7100-7105 smoke=1
+7140-7229 stickx=80 sticky=80 throttle=1
+7140-7200 gun=1
+7230-7319 stickx=176 sticky=40 throttle=200
+7230-7290 gun=1
+7260-7265 missile=1
+7320-7409 stickx=80 sticky=216 throttle=255
+7410-7499 stickx=216 sticky=80 throttle=1
+7500-7589 stickx=216 sticky=80 throttle=1
+7590-7679 stickx=80 sticky=40 throttle=1
+7590-7650 gun=1
+7680-7769 stickx=176 sticky=216 throttle=1
+7680-7740 gun=1
+7770-7859 stickx=40 sticky=176 throttle=1
+7860-7949 stickx=40 sticky=176 throttle=200
+7950-8039 stickx=80 sticky=176 throttle=255
+7980-7985 missile=1
+8040-8129 stickx=40 sticky=216 throttle=128
+8040-8100 gun=1
+8070-8075 missile=1
+8130-8219 stickx=128 sticky=216 throttle=128
+8130-8190 gun=1
+8160-8165 missile=1
+8220-8309 stickx=80 sticky=176 throttle=200
+8250-8255 missile=1
+8310-8399 stickx=216 sticky=80 throttle=200
+8360-8365 smoke=1
+8400-8489 stickx=216 sticky=176 throttle=200
+8400-8460 gun=1
+8490-8579 stickx=40 sticky=80 throttle=200
+8520-8525 missile=1
+8580-8669 stickx=40 sticky=128 throttle=128
+8580-8640 gun=1
+8670-8759 stickx=176 sticky=176 throttle=255
+8670-8730 gun=1
+8700-8705 missile=1
+8760-8849 stickx=128 sticky=40 throttle=200
+8850-8939 stickx=40 sticky=128 throttle=200
+8850-8910 gun=1
+8940-9029 stickx=128 sticky=176 throttle=200
+8970-8975 missile=1
+8990-8995 smoke=1
+9030-9119 stickx=80 sticky=80 throttle=200
+9030-9090 gun=1
+9120-9209 stickx=176 sticky=40 throttle=255
+9210-9299 stickx=40 sticky=176 throttle=255
+9210-9270 gun=1
+9240-9245 missile=1
+9300-9389 stickx=216 sticky=80 throttle=128
+9300-9360 gun=1
+9390-9479 stickx=128 sticky=176 throttle=128
+9390-9450 gun=1
+9480-9569 stickx=80 sticky=40 throttle=128
+9480-9540 gun=1
+9570-9659 stickx=128 sticky=176 throttle=255
+9570-9630 gun=1
+9600-9605 missile=1
+9620-9625 smoke=1
+9660-9749 stickx=40 sticky=128 throttle=128
+9660-9720 gun=1
+9730-9735 vr4=1
+9750-9839 stickx=176 sticky=176 throttle=128
+9750-9810 gun=1
+9800-9805 smoke=1
+9840-9929 stickx=128 sticky=80 throttle=128
+9840-9900 gun=1
+9930-10019 stickx=176 sticky=128 throttle=1
+9930-9990 gun=1
+10020-10109 stickx=216 sticky=176 throttle=1
+10020-10080 gun=1
+10110-10199 stickx=176 sticky=176 throttle=128
+10140-10145 missile=1
+10200-10289 stickx=40 sticky=176 throttle=1
+10200-10260 gun=1
+10230-10235 missile=1
+10290-10379 stickx=40 sticky=128 throttle=128
+10290-10350 gun=1
+10380-10469 stickx=40 sticky=40 throttle=200
+10380-10440 gun=1
+10470-10559 stickx=216 sticky=40 throttle=1
+10470-10530 gun=1
+10560-10649 stickx=80 sticky=176 throttle=128
+10560-10620 gun=1
+10590-10595 missile=1
+10650-10739 stickx=40 sticky=40 throttle=128
+10650-10710 gun=1
+10740-10829 stickx=176 sticky=128 throttle=128
+10740-10800 gun=1
+10830-10919 stickx=176 sticky=80 throttle=1
+10920-11009 stickx=80 sticky=128 throttle=128
+10920-10980 gun=1
+10950-10955 missile=1
+11010-11099 stickx=216 sticky=176 throttle=128
+11100-11189 stickx=216 sticky=80 throttle=255
+11100-11160 gun=1
+11130-11135 missile=1
+11190-11279 stickx=40 sticky=80 throttle=255
+11190-11250 gun=1
+11280-11369 stickx=40 sticky=80 throttle=200
+11280-11340 gun=1
+11370-11459 stickx=128 sticky=176 throttle=200
+11460-11549 stickx=40 sticky=128 throttle=255
+11490-11495 missile=1
+11550-11639 stickx=128 sticky=128 throttle=255
+11550-11610 gun=1
+11640-11729 stickx=176 sticky=80 throttle=200
+11640-11700 gun=1
+11690-11695 smoke=1
+11730-11819 stickx=176 sticky=40 throttle=255
+11730-11790 gun=1
+11760-11765 missile=1
+11820-11909 stickx=40 sticky=216 throttle=200
+11820-11880 gun=1
+11890-11895 vr3=1
+11910-11999 stickx=128 sticky=128 throttle=1
+12000-12089 stickx=40 sticky=40 throttle=128
+12000-12060 gun=1
+12090-12179 stickx=128 sticky=176 throttle=255
+12090-12150 gun=1
+12140-12145 smoke=1
+12180-12269 stickx=128 sticky=80 throttle=128
+12180-12240 gun=1
+12270-12359 stickx=40 sticky=216 throttle=128
+12270-12330 gun=1
+12300-12305 missile=1
+12360-12449 stickx=176 sticky=216 throttle=200
+12360-12420 gun=1
+12450-12539 stickx=216 sticky=40 throttle=128
+12450-12510 gun=1
+12540-12629 stickx=80 sticky=80 throttle=255
+12540-12600 gun=1
+12630-12719 stickx=40 sticky=128 throttle=200
+12630-12690 gun=1
+12660-12665 missile=1
+12720-12809 stickx=176 sticky=80 throttle=128
+12720-12780 gun=1
+12750-12755 missile=1
+12810-12899 stickx=128 sticky=40 throttle=255
+12810-12870 gun=1
+12840-12845 missile=1
+12900-12989 stickx=40 sticky=176 throttle=1
+12900-12960 gun=1
+12990-13079 stickx=128 sticky=40 throttle=200
+12990-13050 gun=1
+13020-13025 missile=1
+13080-13169 stickx=80 sticky=40 throttle=200
+13080-13140 gun=1
+13110-13115 missile=1
+13170-13259 stickx=40 sticky=40 throttle=200
+13170-13230 gun=1
+13260-13349 stickx=128 sticky=40 throttle=128
+13350-13439 stickx=216 sticky=128 throttle=1
+13350-13410 gun=1
+13440-13529 stickx=40 sticky=176 throttle=128
+13440-13500 gun=1
+13470-13475 missile=1
+13530-13619 stickx=176 sticky=128 throttle=200
+13530-13590 gun=1
+13560-13565 missile=1
+13620-13709 stickx=176 sticky=176 throttle=1
+13710-13799 stickx=176 sticky=80 throttle=1
+13710-13770 gun=1
+13740-13745 missile=1
+13800-13889 stickx=216 sticky=128 throttle=255
+13830-13835 missile=1
+13850-13855 smoke=1
+13890-13979 stickx=176 sticky=40 throttle=200
+13920-13925 missile=1
+13980-14069 stickx=80 sticky=40 throttle=1
+13980-14040 gun=1
+9000-9005 coin=1
+9040-9045 coin=1
+9100-9105 start=1

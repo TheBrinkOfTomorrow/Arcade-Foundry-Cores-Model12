@@ -1,0 +1,3 @@
+# Manx TT Model 1 sound board 68000 (manxtt epr-18742): entry points found by running the game
+00112e
+00429a

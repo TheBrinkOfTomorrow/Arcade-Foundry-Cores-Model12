@@ -1,0 +1,2 @@
+# The House of the Dead: attract only, no input, for 6,000 frames.
+frames 6000

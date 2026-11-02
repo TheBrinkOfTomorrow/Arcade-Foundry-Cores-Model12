@@ -1,0 +1,12 @@
+# Wing War lost: two coins, start, the first plane and mission taken, then flying level
+# with the gun never fired until the rival wins, through the continue countdown to game over.
+600-605 coin=1
+640-645 coin=1
+700-705 start=1
+760-765 gun=1
+820-825 gun=1
+880-885 gun=1
+940-945 gun=1
+1000-1005 gun=1
+1060-1065 gun=1
+1200-14000 throttle=128

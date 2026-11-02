@@ -1,0 +1,11 @@
+# Wing War's sound 68000 (epr-17126): the indirect targets MAME's sound CPU
+# log reached, found by m1sndcheck. Addresses only (rules.md).
+001170
+0010c4
+001004
+000fc4
+000fac
+000fa0
+001008
+000f88
+000f84

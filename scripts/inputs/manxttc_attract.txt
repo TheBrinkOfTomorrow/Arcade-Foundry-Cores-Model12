@@ -1,0 +1,6 @@
+# Manx TT (manxttc), from a blank EEPROM: the DX cabinet's motion seat check
+# never ends without the seat (MAME too), so enter test mode and leave it
+# again (the cursor starts on EXIT); then attract.
+frames 3000
+650-655 test=1
+750-755 test=1

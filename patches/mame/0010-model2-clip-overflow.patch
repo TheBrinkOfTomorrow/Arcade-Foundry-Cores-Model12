@@ -1,0 +1,24 @@
+--- a/src/mame/sega/model2_v.cpp
++++ b/src/mame/sega/model2_v.cpp
+@@ -214,6 +214,12 @@
+ 	{
+ 		const int32_t nextvert = (i + 1) % num_vertices;
+ 
++		// daytona-arcade-recomp: at most 8 vertices out (the callers' buffers). A
++		// self-intersecting quad gains two vertices a plane and overran them
++		// (Top Skater: a stack overflow); the extra vertices are dropped.
++		if (outcount >= 8)
++			break;
++
+ 		/* if the current point is inside the plane, add it */
+ 		if (curin)
+ 			out[outcount++] = *cur;
+@@ -222,7 +228,7 @@
+ 		const int32_t nextin = (nextdot >= clip_plane.distance) ? 1 : 0;
+ 
+ 		/* Add a clipped vertex if one end of the current edge is inside the plane and the other is outside */
+-		if ((curin != nextin) && !std::isnan(curdot) && !std::isnan(nextdot))
++		if ((curin != nextin) && !std::isnan(curdot) && !std::isnan(nextdot) && outcount < 8)
+ 		{
+ 			const float scale = (clip_plane.distance - curdot) / (nextdot - curdot);
+ 

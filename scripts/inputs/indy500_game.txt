@@ -1,0 +1,13 @@
+# INDY 500: one game. Three coins (2 credits to start on the Twin cabinet),
+# start through the menus with the wheel centred, then full throttle with no
+# steering until the race ends and attract comes back.
+frames 9000
+1000-1005 coin=1
+1050-1055 coin=1
+1100-1105 coin=1
+1200-1205 start=1
+1400-1405 start=1
+1600-1605 start=1
+1800-1805 start=1
+2000-2005 start=1
+2200-8400 accel=255

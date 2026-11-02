@@ -1,0 +1,3438 @@
+diff --git a/src/devices/cpu/v60/am1.hxx b/src/devices/cpu/v60/am1.hxx
+index 440eeb3807..b1b8a14cfc 100644
+--- a/src/devices/cpu/v60/am1.hxx
++++ b/src/devices/cpu/v60/am1.hxx
+@@ -26,13 +26,13 @@ uint32_t v60_device::am1RegisterIndirect()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_byte(m_reg[m_modval & 0x1F]);
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_word_unaligned(m_reg[m_modval & 0x1F]);
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F]);
+ 		break;
+ 	}
+ 
+@@ -42,7 +42,7 @@ uint32_t v60_device::am1RegisterIndirect()
+ uint32_t v60_device::bam1RegisterIndirect()
+ {
+ 	m_bamoffset = 0;
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F]);
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F]);
+ 	return 1;
+ }
+ 
+@@ -51,13 +51,13 @@ uint32_t v60_device::am1RegisterIndirectIndexed()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_reg[m_modval2 & 0x1F] + m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_byte(m_reg[m_modval2 & 0x1F] + m_reg[m_modval & 0x1F]);
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_reg[m_modval2 & 0x1F] + m_reg[m_modval & 0x1F] * 2);
++		m_amout = m_tprog.read_word_unaligned(m_reg[m_modval2 & 0x1F] + m_reg[m_modval & 0x1F] * 2);
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + m_reg[m_modval & 0x1F] * 4);
++		m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + m_reg[m_modval & 0x1F] * 4);
+ 		break;
+ 	}
+ 
+@@ -67,7 +67,7 @@ uint32_t v60_device::am1RegisterIndirectIndexed()
+ uint32_t v60_device::bam1RegisterIndirectIndexed()
+ {
+ 	m_bamoffset = m_reg[m_modval & 0x1F];
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 2;
+ }
+@@ -77,15 +77,15 @@ uint32_t v60_device::am1Autoincrement()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_byte(m_reg[m_modval & 0x1F]);
+ 		m_reg[m_modval & 0x1F]++;
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_word_unaligned(m_reg[m_modval & 0x1F]);
+ 		m_reg[m_modval & 0x1F] +=2;
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F]);
+ 		m_reg[m_modval & 0x1F] +=4;
+ 		break;
+ 	}
+@@ -96,7 +96,7 @@ uint32_t v60_device::am1Autoincrement()
+ uint32_t v60_device::bam1Autoincrement()
+ {
+ 	m_bamoffset = 0;
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F]);
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F]);
+ 	switch (m_moddim)
+ 	{
+ 	case 10:
+@@ -118,15 +118,15 @@ uint32_t v60_device::am1Autodecrement()
+ 	{
+ 	case 0:
+ 		m_reg[m_modval & 0x1F]--;
+-		m_amout = m_program->read_byte(m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_byte(m_reg[m_modval & 0x1F]);
+ 		break;
+ 	case 1:
+ 		m_reg[m_modval & 0x1F]-=2;
+-		m_amout = m_program->read_word_unaligned(m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_word_unaligned(m_reg[m_modval & 0x1F]);
+ 		break;
+ 	case 2:
+ 		m_reg[m_modval & 0x1F]-=4;
+-		m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F]);
+ 		break;
+ 	}
+ 
+@@ -148,7 +148,7 @@ uint32_t v60_device::bam1Autodecrement()
+ 		fatalerror("CPU - BAM1 - 7\n");
+ 		break;
+ 	}
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F]);
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F]);
+ 	return 1;
+ }
+ 
+@@ -157,13 +157,13 @@ uint32_t v60_device::am1Displacement8()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1));
++		m_amout = m_tprog.read_byte(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1));
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1));
++		m_amout = m_tprog.read_word_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1));
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1));
++		m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1));
+ 		break;
+ 	}
+ 
+@@ -172,8 +172,8 @@ uint32_t v60_device::am1Displacement8()
+ 
+ uint32_t v60_device::bam1Displacement8()
+ {
+-	m_bamoffset = m_program->read_byte(m_modadd + 1);
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + m_bamoffset / 8);
++	m_bamoffset = m_tprog.read_byte(m_modadd + 1);
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 2;
+ }
+@@ -184,13 +184,13 @@ uint32_t v60_device::am1Displacement16()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1));
++		m_amout = m_tprog.read_byte(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1));
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1));
++		m_amout = m_tprog.read_word_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1));
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1));
++		m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1));
+ 		break;
+ 	}
+ 
+@@ -200,7 +200,7 @@ uint32_t v60_device::am1Displacement16()
+ uint32_t v60_device::bam1Displacement16()
+ {
+ 	m_bamoffset = OpRead16(m_modadd + 1);
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 3;
+ }
+@@ -210,13 +210,13 @@ uint32_t v60_device::am1Displacement32()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1));
++		m_amout = m_tprog.read_byte(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1));
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1));
++		m_amout = m_tprog.read_word_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1));
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1));
++		m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1));
+ 		break;
+ 	}
+ 
+@@ -226,7 +226,7 @@ uint32_t v60_device::am1Displacement32()
+ uint32_t v60_device::bam1Displacement32()
+ {
+ 	m_bamoffset = OpRead32(m_modadd + 1);
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 5;
+ }
+@@ -236,13 +236,13 @@ uint32_t v60_device::am1DisplacementIndexed8()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_byte(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F]);
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2);
++		m_amout = m_tprog.read_word_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2);
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4);
++		m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4);
+ 		break;
+ 	}
+ 
+@@ -252,7 +252,7 @@ uint32_t v60_device::am1DisplacementIndexed8()
+ uint32_t v60_device::bam1DisplacementIndexed8()
+ {
+ 	m_bamoffset = m_reg[m_modval & 0x1F];
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2) + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2) + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 3;
+ }
+@@ -262,13 +262,13 @@ uint32_t v60_device::am1DisplacementIndexed16()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_byte(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F]);
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2);
++		m_amout = m_tprog.read_word_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2);
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4);
++		m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4);
+ 		break;
+ 	}
+ 
+@@ -278,7 +278,7 @@ uint32_t v60_device::am1DisplacementIndexed16()
+ uint32_t v60_device::bam1DisplacementIndexed16()
+ {
+ 	m_bamoffset = m_reg[m_modval & 0x1F];
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2) + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2) + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 4;
+ }
+@@ -288,13 +288,13 @@ uint32_t v60_device::am1DisplacementIndexed32()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_byte(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F]);
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2);
++		m_amout = m_tprog.read_word_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2);
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4);
++		m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4);
+ 		break;
+ 	}
+ 
+@@ -304,7 +304,7 @@ uint32_t v60_device::am1DisplacementIndexed32()
+ uint32_t v60_device::bam1DisplacementIndexed32()
+ {
+ 	m_bamoffset = m_reg[m_modval & 0x1F];
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2) + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2) + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 6;
+ }
+@@ -315,13 +315,13 @@ uint32_t v60_device::am1PCDisplacement8()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(PC + (int8_t)OpRead8(m_modadd + 1));
++		m_amout = m_tprog.read_byte(PC + (int8_t)OpRead8(m_modadd + 1));
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(PC + (int8_t)OpRead8(m_modadd + 1));
++		m_amout = m_tprog.read_word_unaligned(PC + (int8_t)OpRead8(m_modadd + 1));
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1));
++		m_amout = m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1));
+ 		break;
+ 	}
+ 
+@@ -331,7 +331,7 @@ uint32_t v60_device::am1PCDisplacement8()
+ uint32_t v60_device::bam1PCDisplacement8()
+ {
+ 	m_bamoffset = OpRead8(m_modadd + 1);
+-	m_amout = m_program->read_dword_unaligned(PC + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(PC + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 2;
+ }
+@@ -341,13 +341,13 @@ uint32_t v60_device::am1PCDisplacement16()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(PC + (int16_t)OpRead16(m_modadd + 1));
++		m_amout = m_tprog.read_byte(PC + (int16_t)OpRead16(m_modadd + 1));
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(PC + (int16_t)OpRead16(m_modadd + 1));
++		m_amout = m_tprog.read_word_unaligned(PC + (int16_t)OpRead16(m_modadd + 1));
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1));
++		m_amout = m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1));
+ 		break;
+ 	}
+ 
+@@ -357,7 +357,7 @@ uint32_t v60_device::am1PCDisplacement16()
+ uint32_t v60_device::bam1PCDisplacement16()
+ {
+ 	m_bamoffset = OpRead16(m_modadd + 1);
+-	m_amout = m_program->read_dword_unaligned(PC + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(PC + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 3;
+ }
+@@ -367,13 +367,13 @@ uint32_t v60_device::am1PCDisplacement32()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(PC + OpRead32(m_modadd + 1));
++		m_amout = m_tprog.read_byte(PC + OpRead32(m_modadd + 1));
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(PC + OpRead32(m_modadd + 1));
++		m_amout = m_tprog.read_word_unaligned(PC + OpRead32(m_modadd + 1));
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 1));
++		m_amout = m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 1));
+ 		break;
+ 	}
+ 
+@@ -383,7 +383,7 @@ uint32_t v60_device::am1PCDisplacement32()
+ uint32_t v60_device::bam1PCDisplacement32()
+ {
+ 	m_bamoffset = OpRead32(m_modadd + 1);
+-	m_amout = m_program->read_dword_unaligned(PC + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(PC + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 5;
+ }
+@@ -393,13 +393,13 @@ uint32_t v60_device::am1PCDisplacementIndexed8()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(PC + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_byte(PC + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F]);
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(PC + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2);
++		m_amout = m_tprog.read_word_unaligned(PC + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2);
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4);
++		m_amout = m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4);
+ 		break;
+ 	}
+ 
+@@ -409,7 +409,7 @@ uint32_t v60_device::am1PCDisplacementIndexed8()
+ uint32_t v60_device::bam1PCDisplacementIndexed8()
+ {
+ 	m_bamoffset = m_reg[m_modval & 0x1F];
+-	m_amout = m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2) + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2) + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 3;
+ }
+@@ -420,13 +420,13 @@ uint32_t v60_device::am1PCDisplacementIndexed16()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(PC + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_byte(PC + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F]);
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(PC + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2);
++		m_amout = m_tprog.read_word_unaligned(PC + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2);
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4);
++		m_amout = m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4);
+ 		break;
+ 	}
+ 
+@@ -436,7 +436,7 @@ uint32_t v60_device::am1PCDisplacementIndexed16()
+ uint32_t v60_device::bam1PCDisplacementIndexed16()
+ {
+ 	m_bamoffset = m_reg[m_modval & 0x1F];
+-	m_amout = m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2) + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2) + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 4;
+ }
+@@ -446,13 +446,13 @@ uint32_t v60_device::am1PCDisplacementIndexed32()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(PC + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_byte(PC + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F]);
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(PC + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2);
++		m_amout = m_tprog.read_word_unaligned(PC + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2);
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4);
++		m_amout = m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4);
+ 		break;
+ 	}
+ 
+@@ -462,7 +462,7 @@ uint32_t v60_device::am1PCDisplacementIndexed32()
+ uint32_t v60_device::bam1PCDisplacementIndexed32()
+ {
+ 	m_bamoffset = m_reg[m_modval & 0x1F];
+-	m_amout = m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 2) + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 2) + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 6;
+ }
+@@ -472,13 +472,13 @@ uint32_t v60_device::am1DisplacementIndirect8()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)));
++		m_amout = m_tprog.read_byte(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)));
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)));
++		m_amout = m_tprog.read_word_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)));
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)));
++		m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)));
+ 		break;
+ 	}
+ 
+@@ -488,7 +488,7 @@ uint32_t v60_device::am1DisplacementIndirect8()
+ uint32_t v60_device::bam1DisplacementIndirect8()
+ {
+ 	m_bamoffset = 0;
+-	m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)));
++	m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)));
+ 	return 2;
+ }
+ 
+@@ -497,13 +497,13 @@ uint32_t v60_device::am1DisplacementIndirect16()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)));
++		m_amout = m_tprog.read_byte(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)));
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)));
++		m_amout = m_tprog.read_word_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)));
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)));
++		m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)));
+ 		break;
+ 	}
+ 
+@@ -513,7 +513,7 @@ uint32_t v60_device::am1DisplacementIndirect16()
+ uint32_t v60_device::bam1DisplacementIndirect16()
+ {
+ 	m_bamoffset = 0;
+-	m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)));
++	m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)));
+ 	return 3;
+ }
+ 
+@@ -522,13 +522,13 @@ uint32_t v60_device::am1DisplacementIndirect32()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)));
++		m_amout = m_tprog.read_byte(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)));
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)));
++		m_amout = m_tprog.read_word_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)));
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)));
++		m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)));
+ 		break;
+ 	}
+ 
+@@ -538,7 +538,7 @@ uint32_t v60_device::am1DisplacementIndirect32()
+ uint32_t v60_device::bam1DisplacementIndirect32()
+ {
+ 	m_bamoffset = 0;
+-	m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)));
++	m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)));
+ 	return 5;
+ }
+ 
+@@ -547,13 +547,13 @@ uint32_t v60_device::am1DisplacementIndirectIndexed8()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_byte(m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F]);
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2);
++		m_amout = m_tprog.read_word_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2);
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4);
++		m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4);
+ 		break;
+ 	}
+ 
+@@ -563,7 +563,7 @@ uint32_t v60_device::am1DisplacementIndirectIndexed8()
+ uint32_t v60_device::bam1DisplacementIndirectIndexed8()
+ {
+ 	m_bamoffset = m_reg[m_modval & 0x1F];
+-	m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2)) + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2)) + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 3;
+ }
+@@ -573,13 +573,13 @@ uint32_t v60_device::am1DisplacementIndirectIndexed16()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_byte(m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F]);
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2);
++		m_amout = m_tprog.read_word_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2);
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4);
++		m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4);
+ 		break;
+ 	}
+ 
+@@ -589,7 +589,7 @@ uint32_t v60_device::am1DisplacementIndirectIndexed16()
+ uint32_t v60_device::bam1DisplacementIndirectIndexed16()
+ {
+ 	m_bamoffset = m_reg[m_modval & 0x1F];
+-	m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2)) + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2)) + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 4;
+ }
+@@ -599,13 +599,13 @@ uint32_t v60_device::am1DisplacementIndirectIndexed32()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_byte(m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F]);
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2);
++		m_amout = m_tprog.read_word_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2);
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4);
++		m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4);
+ 		break;
+ 	}
+ 
+@@ -615,7 +615,7 @@ uint32_t v60_device::am1DisplacementIndirectIndexed32()
+ uint32_t v60_device::bam1DisplacementIndirectIndexed32()
+ {
+ 	m_bamoffset = m_reg[m_modval & 0x1F];
+-	m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2)) + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2)) + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 6;
+ }
+@@ -625,13 +625,13 @@ uint32_t v60_device::am1PCDisplacementIndirect8()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)));
++		m_amout = m_tprog.read_byte(m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)));
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)));
++		m_amout = m_tprog.read_word_unaligned(m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)));
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)));
++		m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)));
+ 		break;
+ 	}
+ 
+@@ -641,7 +641,7 @@ uint32_t v60_device::am1PCDisplacementIndirect8()
+ uint32_t v60_device::bam1PCDisplacementIndirect8()
+ {
+ 	m_bamoffset = 0;
+-	m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)));
++	m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)));
+ 	return 2;
+ }
+ 
+@@ -650,13 +650,13 @@ uint32_t v60_device::am1PCDisplacementIndirect16()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)));
++		m_amout = m_tprog.read_byte(m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)));
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)));
++		m_amout = m_tprog.read_word_unaligned(m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)));
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)));
++		m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)));
+ 		break;
+ 	}
+ 
+@@ -666,7 +666,7 @@ uint32_t v60_device::am1PCDisplacementIndirect16()
+ uint32_t v60_device::bam1PCDisplacementIndirect16()
+ {
+ 	m_bamoffset = 0;
+-	m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)));
++	m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)));
+ 	return 3;
+ }
+ 
+@@ -675,13 +675,13 @@ uint32_t v60_device::am1PCDisplacementIndirect32()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 1)));
++		m_amout = m_tprog.read_byte(m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 1)));
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 1)));
++		m_amout = m_tprog.read_word_unaligned(m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 1)));
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 1)));
++		m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 1)));
+ 		break;
+ 	}
+ 
+@@ -691,7 +691,7 @@ uint32_t v60_device::am1PCDisplacementIndirect32()
+ uint32_t v60_device::bam1PCDisplacementIndirect32()
+ {
+ 	m_bamoffset = 0;
+-	m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 1)));
++	m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 1)));
+ 	return 5;
+ }
+ 
+@@ -700,13 +700,13 @@ uint32_t v60_device::am1PCDisplacementIndirectIndexed8()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_byte(m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F]);
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2);
++		m_amout = m_tprog.read_word_unaligned(m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2);
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4);
++		m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4);
+ 		break;
+ 	}
+ 
+@@ -716,7 +716,7 @@ uint32_t v60_device::am1PCDisplacementIndirectIndexed8()
+ uint32_t v60_device::bam1PCDisplacementIndirectIndexed8()
+ {
+ 	m_bamoffset = m_reg[m_modval & 0x1F];
+-	m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2)) + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2)) + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 3;
+ }
+@@ -726,13 +726,13 @@ uint32_t v60_device::am1PCDisplacementIndirectIndexed16()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_byte(m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F]);
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2);
++		m_amout = m_tprog.read_word_unaligned(m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2);
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4);
++		m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4);
+ 		break;
+ 	}
+ 
+@@ -742,7 +742,7 @@ uint32_t v60_device::am1PCDisplacementIndirectIndexed16()
+ uint32_t v60_device::bam1PCDisplacementIndirectIndexed16()
+ {
+ 	m_bamoffset = m_reg[m_modval & 0x1F];
+-	m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2)) + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2)) + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 4;
+ }
+@@ -752,13 +752,13 @@ uint32_t v60_device::am1PCDisplacementIndirectIndexed32()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_byte(m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F]);
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2);
++		m_amout = m_tprog.read_word_unaligned(m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2);
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4);
++		m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4);
+ 		break;
+ 	}
+ 
+@@ -768,7 +768,7 @@ uint32_t v60_device::am1PCDisplacementIndirectIndexed32()
+ uint32_t v60_device::bam1PCDisplacementIndirectIndexed32()
+ {
+ 	m_bamoffset = m_reg[m_modval & 0x1F];
+-	m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 2)) + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 2)) + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 6;
+ }
+@@ -778,15 +778,15 @@ uint32_t v60_device::am1DoubleDisplacement8()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2));
++		m_amout = m_tprog.read_byte(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2));
+ 		break;
+ 
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2));
++		m_amout = m_tprog.read_word_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2));
+ 		break;
+ 
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2));
++		m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2));
+ 		break;
+ 	}
+ 
+@@ -796,7 +796,7 @@ uint32_t v60_device::am1DoubleDisplacement8()
+ uint32_t v60_device::bam1DoubleDisplacement8()
+ {
+ 	m_bamoffset = OpRead8(m_modadd + 2);
+-	m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)) + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)) + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 3;
+ }
+@@ -806,15 +806,15 @@ uint32_t v60_device::am1DoubleDisplacement16()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3));
++		m_amout = m_tprog.read_byte(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3));
+ 		break;
+ 
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3));
++		m_amout = m_tprog.read_word_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3));
+ 		break;
+ 
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3));
++		m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3));
+ 		break;
+ 	}
+ 
+@@ -824,7 +824,7 @@ uint32_t v60_device::am1DoubleDisplacement16()
+ uint32_t v60_device::bam1DoubleDisplacement16()
+ {
+ 	m_bamoffset = OpRead16(m_modadd + 3);
+-	m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)) + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)) + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 5;
+ }
+@@ -834,15 +834,15 @@ uint32_t v60_device::am1DoubleDisplacement32()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5));
++		m_amout = m_tprog.read_byte(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5));
+ 		break;
+ 
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5));
++		m_amout = m_tprog.read_word_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5));
+ 		break;
+ 
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5));
++		m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5));
+ 		break;
+ 	}
+ 
+@@ -852,7 +852,7 @@ uint32_t v60_device::am1DoubleDisplacement32()
+ uint32_t v60_device::bam1DoubleDisplacement32()
+ {
+ 	m_bamoffset = OpRead32(m_modadd + 5);
+-	m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)) + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)) + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 9;
+ }
+@@ -862,15 +862,15 @@ uint32_t v60_device::am1PCDoubleDisplacement8()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2));
++		m_amout = m_tprog.read_byte(m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2));
+ 		break;
+ 
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2));
++		m_amout = m_tprog.read_word_unaligned(m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2));
+ 		break;
+ 
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2));
++		m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2));
+ 		break;
+ 	}
+ 
+@@ -880,7 +880,7 @@ uint32_t v60_device::am1PCDoubleDisplacement8()
+ uint32_t v60_device::bam1PCDoubleDisplacement8()
+ {
+ 	m_bamoffset = OpRead8(m_modadd + 2);
+-	m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)) + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)) + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 3;
+ }
+@@ -890,15 +890,15 @@ uint32_t v60_device::am1PCDoubleDisplacement16()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3));
++		m_amout = m_tprog.read_byte(m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3));
+ 		break;
+ 
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3));
++		m_amout = m_tprog.read_word_unaligned(m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3));
+ 		break;
+ 
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3));
++		m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3));
+ 		break;
+ 	}
+ 
+@@ -908,7 +908,7 @@ uint32_t v60_device::am1PCDoubleDisplacement16()
+ uint32_t v60_device::bam1PCDoubleDisplacement16()
+ {
+ 	m_bamoffset = OpRead16(m_modadd + 3);
+-	m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)) + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)) + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 5;
+ }
+@@ -919,15 +919,15 @@ uint32_t v60_device::am1PCDoubleDisplacement32()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5));
++		m_amout = m_tprog.read_byte(m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5));
+ 		break;
+ 
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5));
++		m_amout = m_tprog.read_word_unaligned(m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5));
+ 		break;
+ 
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5));
++		m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5));
+ 		break;
+ 	}
+ 
+@@ -937,7 +937,7 @@ uint32_t v60_device::am1PCDoubleDisplacement32()
+ uint32_t v60_device::bam1PCDoubleDisplacement32()
+ {
+ 	m_bamoffset = OpRead32(m_modadd + 5);
+-	m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 1)) + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 1)) + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 9;
+ }
+@@ -947,15 +947,15 @@ uint32_t v60_device::am1DirectAddress()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(OpRead32(m_modadd + 1));
++		m_amout = m_tprog.read_byte(OpRead32(m_modadd + 1));
+ 		break;
+ 
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(OpRead32(m_modadd + 1));
++		m_amout = m_tprog.read_word_unaligned(OpRead32(m_modadd + 1));
+ 		break;
+ 
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(OpRead32(m_modadd + 1));
++		m_amout = m_tprog.read_dword_unaligned(OpRead32(m_modadd + 1));
+ 		break;
+ 	}
+ 
+@@ -965,7 +965,7 @@ uint32_t v60_device::am1DirectAddress()
+ uint32_t v60_device::bam1DirectAddress()
+ {
+ 	m_bamoffset = 0;
+-	m_amout = m_program->read_dword_unaligned(OpRead32(m_modadd + 1));
++	m_amout = m_tprog.read_dword_unaligned(OpRead32(m_modadd + 1));
+ 	return 5;
+ }
+ 
+@@ -974,15 +974,15 @@ uint32_t v60_device::am1DirectAddressIndexed()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_byte(OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F]);
+ 		break;
+ 
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2);
++		m_amout = m_tprog.read_word_unaligned(OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2);
+ 		break;
+ 
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4);
++		m_amout = m_tprog.read_dword_unaligned(OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4);
+ 		break;
+ 	}
+ 
+@@ -992,7 +992,7 @@ uint32_t v60_device::am1DirectAddressIndexed()
+ uint32_t v60_device::bam1DirectAddressIndexed()
+ {
+ 	m_bamoffset = m_reg[m_modval & 0x1F];
+-	m_amout = m_program->read_dword_unaligned(OpRead32(m_modadd + 2) + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(OpRead32(m_modadd + 2) + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 6;
+ }
+@@ -1002,15 +1002,15 @@ uint32_t v60_device::am1DirectAddressDeferred()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_program->read_dword_unaligned(OpRead32(m_modadd + 1)));
++		m_amout = m_tprog.read_byte(m_tprog.read_dword_unaligned(OpRead32(m_modadd + 1)));
+ 		break;
+ 
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_program->read_dword_unaligned(OpRead32(m_modadd + 1)));
++		m_amout = m_tprog.read_word_unaligned(m_tprog.read_dword_unaligned(OpRead32(m_modadd + 1)));
+ 		break;
+ 
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(OpRead32(m_modadd + 1)));
++		m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(OpRead32(m_modadd + 1)));
+ 		break;
+ 	}
+ 
+@@ -1020,7 +1020,7 @@ uint32_t v60_device::am1DirectAddressDeferred()
+ uint32_t v60_device::bam1DirectAddressDeferred()
+ {
+ 	m_bamoffset = 0;
+-	m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(OpRead32(m_modadd + 1)));
++	m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(OpRead32(m_modadd + 1)));
+ 	return 5;
+ }
+ 
+@@ -1029,15 +1029,15 @@ uint32_t v60_device::am1DirectAddressDeferredIndexed()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_byte(m_program->read_dword_unaligned(OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F]);
++		m_amout = m_tprog.read_byte(m_tprog.read_dword_unaligned(OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F]);
+ 		break;
+ 
+ 	case 1:
+-		m_amout = m_program->read_word_unaligned(m_program->read_dword_unaligned(OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2);
++		m_amout = m_tprog.read_word_unaligned(m_tprog.read_dword_unaligned(OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2);
+ 		break;
+ 
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4);
++		m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4);
+ 		break;
+ 	}
+ 
+@@ -1047,7 +1047,7 @@ uint32_t v60_device::am1DirectAddressDeferredIndexed()
+ uint32_t v60_device::bam1DirectAddressDeferredIndexed()
+ {
+ 	m_bamoffset = m_reg[m_modval & 0x1F];
+-	m_amout = m_program->read_dword_unaligned(m_program->read_dword_unaligned(OpRead32(m_modadd + 2)) + m_bamoffset / 8);
++	m_amout = m_tprog.read_dword_unaligned(m_tprog.read_dword_unaligned(OpRead32(m_modadd + 2)) + m_bamoffset / 8);
+ 	m_bamoffset&=7;
+ 	return 6;
+ }
+diff --git a/src/devices/cpu/v60/am2.hxx b/src/devices/cpu/v60/am2.hxx
+index 3599523384..1ace2d821d 100644
+--- a/src/devices/cpu/v60/am2.hxx
++++ b/src/devices/cpu/v60/am2.hxx
+@@ -447,7 +447,7 @@ uint32_t v60_device::bam2PCDisplacementIndexed32()
+ uint32_t v60_device::am2DisplacementIndirect8()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1));
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1));
+ 
+ 	return 2;
+ }
+@@ -455,7 +455,7 @@ uint32_t v60_device::am2DisplacementIndirect8()
+ uint32_t v60_device::bam2DisplacementIndirect8()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1));
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1));
+ 	m_bamoffset = 0;
+ 	return 2;
+ }
+@@ -463,7 +463,7 @@ uint32_t v60_device::bam2DisplacementIndirect8()
+ uint32_t v60_device::am2DisplacementIndirect16()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1));
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1));
+ 
+ 	return 3;
+ }
+@@ -471,7 +471,7 @@ uint32_t v60_device::am2DisplacementIndirect16()
+ uint32_t v60_device::bam2DisplacementIndirect16()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1));
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1));
+ 	m_bamoffset = 0;
+ 	return 3;
+ }
+@@ -479,7 +479,7 @@ uint32_t v60_device::bam2DisplacementIndirect16()
+ uint32_t v60_device::am2DisplacementIndirect32()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1));
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1));
+ 
+ 	return 5;
+ }
+@@ -487,7 +487,7 @@ uint32_t v60_device::am2DisplacementIndirect32()
+ uint32_t v60_device::bam2DisplacementIndirect32()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1));
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1));
+ 	m_bamoffset = 0;
+ 
+ 	return 5;
+@@ -500,16 +500,16 @@ uint32_t v60_device::am2DisplacementIndirectIndexed8()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F];
++		m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F];
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2;
++		m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2;
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4;
++		m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4;
+ 		break;
+ 	case 3:
+-		m_amout = m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 8;
++		m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 8;
+ 		break;
+ 	}
+ 
+@@ -519,7 +519,7 @@ uint32_t v60_device::am2DisplacementIndirectIndexed8()
+ uint32_t v60_device::bam2DisplacementIndirectIndexed8()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2));
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2));
+ 	m_bamoffset = m_reg[m_modval & 0x1F];
+ 
+ 	return 3;
+@@ -532,16 +532,16 @@ uint32_t v60_device::am2DisplacementIndirectIndexed16()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F];
++		m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F];
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2;
++		m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2;
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4;
++		m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4;
+ 		break;
+ 	case 3:
+-		m_amout = m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 8;
++		m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 8;
+ 		break;
+ 	}
+ 
+@@ -551,7 +551,7 @@ uint32_t v60_device::am2DisplacementIndirectIndexed16()
+ uint32_t v60_device::bam2DisplacementIndirectIndexed16()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2));
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2));
+ 	m_bamoffset = m_reg[m_modval & 0x1F];
+ 
+ 	return 4;
+@@ -564,16 +564,16 @@ uint32_t v60_device::am2DisplacementIndirectIndexed32()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F];
++		m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F];
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2;
++		m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2;
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4;
++		m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4;
+ 		break;
+ 	case 3:
+-		m_amout = m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 8;
++		m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 8;
+ 		break;
+ 	}
+ 
+@@ -583,7 +583,7 @@ uint32_t v60_device::am2DisplacementIndirectIndexed32()
+ uint32_t v60_device::bam2DisplacementIndirectIndexed32()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2));
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2));
+ 	m_bamoffset = m_reg[m_modval & 0x1F];
+ 
+ 	return 6;
+@@ -592,7 +592,7 @@ uint32_t v60_device::bam2DisplacementIndirectIndexed32()
+ uint32_t v60_device::am2PCDisplacementIndirect8()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1));
++	m_amout = m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1));
+ 
+ 	return 2;
+ }
+@@ -600,7 +600,7 @@ uint32_t v60_device::am2PCDisplacementIndirect8()
+ uint32_t v60_device::bam2PCDisplacementIndirect8()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1));
++	m_amout = m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1));
+ 	m_bamoffset = 0;
+ 
+ 	return 2;
+@@ -609,7 +609,7 @@ uint32_t v60_device::bam2PCDisplacementIndirect8()
+ uint32_t v60_device::am2PCDisplacementIndirect16()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1));
++	m_amout = m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1));
+ 
+ 	return 3;
+ }
+@@ -617,7 +617,7 @@ uint32_t v60_device::am2PCDisplacementIndirect16()
+ uint32_t v60_device::bam2PCDisplacementIndirect16()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1));
++	m_amout = m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1));
+ 	m_bamoffset = 0;
+ 
+ 	return 3;
+@@ -626,7 +626,7 @@ uint32_t v60_device::bam2PCDisplacementIndirect16()
+ uint32_t v60_device::am2PCDisplacementIndirect32()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 1));
++	m_amout = m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 1));
+ 
+ 	return 5;
+ }
+@@ -634,7 +634,7 @@ uint32_t v60_device::am2PCDisplacementIndirect32()
+ uint32_t v60_device::bam2PCDisplacementIndirect32()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 1));
++	m_amout = m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 1));
+ 	m_bamoffset = 0;
+ 
+ 	return 5;
+@@ -647,16 +647,16 @@ uint32_t v60_device::am2PCDisplacementIndirectIndexed8()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F];
++		m_amout = m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F];
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2;
++		m_amout = m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2;
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4;
++		m_amout = m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4;
+ 		break;
+ 	case 3:
+-		m_amout = m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 8;
++		m_amout = m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 8;
+ 		break;
+ 	}
+ 
+@@ -666,7 +666,7 @@ uint32_t v60_device::am2PCDisplacementIndirectIndexed8()
+ uint32_t v60_device::bam2PCDisplacementIndirectIndexed8()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2));
++	m_amout = m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2));
+ 	m_bamoffset = m_reg[m_modval & 0x1F];
+ 
+ 	return 3;
+@@ -679,16 +679,16 @@ uint32_t v60_device::am2PCDisplacementIndirectIndexed16()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F];
++		m_amout = m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F];
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2;
++		m_amout = m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2;
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4;
++		m_amout = m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4;
+ 		break;
+ 	case 3:
+-		m_amout = m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 8;
++		m_amout = m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 8;
+ 		break;
+ 	}
+ 
+@@ -699,7 +699,7 @@ uint32_t v60_device::am2PCDisplacementIndirectIndexed16()
+ uint32_t v60_device::bam2PCDisplacementIndirectIndexed16()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2));
++	m_amout = m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2));
+ 	m_bamoffset = m_reg[m_modval & 0x1F];
+ 
+ 	return 4;
+@@ -713,16 +713,16 @@ uint32_t v60_device::am2PCDisplacementIndirectIndexed32()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F];
++		m_amout = m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F];
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2;
++		m_amout = m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2;
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4;
++		m_amout = m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4;
+ 		break;
+ 	case 3:
+-		m_amout = m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 8;
++		m_amout = m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 8;
+ 		break;
+ 	}
+ 
+@@ -732,7 +732,7 @@ uint32_t v60_device::am2PCDisplacementIndirectIndexed32()
+ uint32_t v60_device::bam2PCDisplacementIndirectIndexed32()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 2));
++	m_amout = m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 2));
+ 	m_bamoffset = m_reg[m_modval & 0x1F];
+ 
+ 	return 6;
+@@ -741,7 +741,7 @@ uint32_t v60_device::bam2PCDisplacementIndirectIndexed32()
+ uint32_t v60_device::am2DoubleDisplacement8()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2);
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2);
+ 
+ 	return 3;
+ }
+@@ -749,7 +749,7 @@ uint32_t v60_device::am2DoubleDisplacement8()
+ uint32_t v60_device::bam2DoubleDisplacement8()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1));
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1));
+ 	m_bamoffset = (int8_t)OpRead8(m_modadd + 2);
+ 
+ 	return 3;
+@@ -758,7 +758,7 @@ uint32_t v60_device::bam2DoubleDisplacement8()
+ uint32_t v60_device::am2DoubleDisplacement16()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3);
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3);
+ 
+ 	return 5;
+ }
+@@ -766,7 +766,7 @@ uint32_t v60_device::am2DoubleDisplacement16()
+ uint32_t v60_device::bam2DoubleDisplacement16()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1));
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1));
+ 	m_bamoffset = (int8_t)OpRead8(m_modadd + 3);
+ 
+ 	return 5;
+@@ -775,7 +775,7 @@ uint32_t v60_device::bam2DoubleDisplacement16()
+ uint32_t v60_device::am2DoubleDisplacement32()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5);
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5);
+ 
+ 	return 9;
+ }
+@@ -783,7 +783,7 @@ uint32_t v60_device::am2DoubleDisplacement32()
+ uint32_t v60_device::bam2DoubleDisplacement32()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1));
++	m_amout = m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1));
+ 	m_bamoffset = OpRead32(m_modadd + 5);
+ 
+ 	return 9;
+@@ -793,7 +793,7 @@ uint32_t v60_device::bam2DoubleDisplacement32()
+ uint32_t v60_device::am2PCDoubleDisplacement8()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2);
++	m_amout = m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2);
+ 
+ 	return 3;
+ }
+@@ -801,7 +801,7 @@ uint32_t v60_device::am2PCDoubleDisplacement8()
+ uint32_t v60_device::bam2PCDoubleDisplacement8()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1));
++	m_amout = m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1));
+ 	m_bamoffset = (int8_t)OpRead8(m_modadd + 2);
+ 
+ 	return 3;
+@@ -810,7 +810,7 @@ uint32_t v60_device::bam2PCDoubleDisplacement8()
+ uint32_t v60_device::am2PCDoubleDisplacement16()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3);
++	m_amout = m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3);
+ 
+ 	return 5;
+ }
+@@ -818,7 +818,7 @@ uint32_t v60_device::am2PCDoubleDisplacement16()
+ uint32_t v60_device::bam2PCDoubleDisplacement16()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1));
++	m_amout = m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1));
+ 	m_bamoffset = (int8_t)OpRead8(m_modadd + 3);
+ 
+ 	return 5;
+@@ -827,7 +827,7 @@ uint32_t v60_device::bam2PCDoubleDisplacement16()
+ uint32_t v60_device::am2PCDoubleDisplacement32()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5);
++	m_amout = m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5);
+ 
+ 	return 9;
+ }
+@@ -835,7 +835,7 @@ uint32_t v60_device::am2PCDoubleDisplacement32()
+ uint32_t v60_device::bam2PCDoubleDisplacement32()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 1));
++	m_amout = m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 1));
+ 	m_bamoffset = OpRead32(m_modadd + 5);
+ 
+ 	return 9;
+@@ -893,7 +893,7 @@ uint32_t v60_device::bam2DirectAddressIndexed()
+ uint32_t v60_device::am2DirectAddressDeferred()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(OpRead32(m_modadd + 1));
++	m_amout = m_tprog.read_dword_unaligned(OpRead32(m_modadd + 1));
+ 
+ 	return 5;
+ }
+@@ -901,7 +901,7 @@ uint32_t v60_device::am2DirectAddressDeferred()
+ uint32_t v60_device::bam2DirectAddressDeferred()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(OpRead32(m_modadd + 1));
++	m_amout = m_tprog.read_dword_unaligned(OpRead32(m_modadd + 1));
+ 	m_bamoffset = 0;
+ 
+ 	return 5;
+@@ -914,16 +914,16 @@ uint32_t v60_device::am2DirectAddressDeferredIndexed()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_amout = m_program->read_dword_unaligned(OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F];
++		m_amout = m_tprog.read_dword_unaligned(OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F];
+ 		break;
+ 	case 1:
+-		m_amout = m_program->read_dword_unaligned(OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2;
++		m_amout = m_tprog.read_dword_unaligned(OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2;
+ 		break;
+ 	case 2:
+-		m_amout = m_program->read_dword_unaligned(OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4;
++		m_amout = m_tprog.read_dword_unaligned(OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4;
+ 		break;
+ 	case 3:
+-		m_amout = m_program->read_dword_unaligned(OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 8;
++		m_amout = m_tprog.read_dword_unaligned(OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 8;
+ 		break;
+ 	}
+ 
+@@ -933,7 +933,7 @@ uint32_t v60_device::am2DirectAddressDeferredIndexed()
+ uint32_t v60_device::bam2DirectAddressDeferredIndexed()
+ {
+ 	m_amflag = 0;
+-	m_amout = m_program->read_dword_unaligned(OpRead32(m_modadd + 2));
++	m_amout = m_tprog.read_dword_unaligned(OpRead32(m_modadd + 2));
+ 	m_bamoffset = m_reg[m_modval & 0x1F];
+ 
+ 	return 6;
+diff --git a/src/devices/cpu/v60/am3.hxx b/src/devices/cpu/v60/am3.hxx
+index b8f5df104b..562600d9ad 100644
+--- a/src/devices/cpu/v60/am3.hxx
++++ b/src/devices/cpu/v60/am3.hxx
+@@ -26,13 +26,13 @@ uint32_t v60_device::am3RegisterIndirect()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_reg[m_modval & 0x1F], m_modwritevalb);
++		m_tprog.write_byte(m_reg[m_modval & 0x1F], m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_reg[m_modval & 0x1F], m_modwritevalh);
++		m_tprog.write_word_unaligned(m_reg[m_modval & 0x1F], m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_reg[m_modval & 0x1F], m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_reg[m_modval & 0x1F], m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -44,13 +44,13 @@ uint32_t v60_device::am3RegisterIndirectIndexed()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_reg[m_modval2 & 0x1F] + m_reg[m_modval & 0x1F], m_modwritevalb);
++		m_tprog.write_byte(m_reg[m_modval2 & 0x1F] + m_reg[m_modval & 0x1F], m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_reg[m_modval2 & 0x1F] + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
++		m_tprog.write_word_unaligned(m_reg[m_modval2 & 0x1F] + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_reg[m_modval2 & 0x1F] + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_reg[m_modval2 & 0x1F] + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -62,15 +62,15 @@ uint32_t v60_device::am3Autoincrement()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_reg[m_modval & 0x1F], m_modwritevalb);
++		m_tprog.write_byte(m_reg[m_modval & 0x1F], m_modwritevalb);
+ 		m_reg[m_modval & 0x1F] += 1;
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_reg[m_modval & 0x1F], m_modwritevalh);
++		m_tprog.write_word_unaligned(m_reg[m_modval & 0x1F], m_modwritevalh);
+ 		m_reg[m_modval & 0x1F] += 2;
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_reg[m_modval & 0x1F], m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_reg[m_modval & 0x1F], m_modwritevalw);
+ 		m_reg[m_modval & 0x1F] += 4;
+ 		break;
+ 	}
+@@ -84,15 +84,15 @@ uint32_t v60_device::am3Autodecrement()
+ 	{
+ 	case 0:
+ 		m_reg[m_modval & 0x1F] -= 1;
+-		m_program->write_byte(m_reg[m_modval & 0x1F], m_modwritevalb);
++		m_tprog.write_byte(m_reg[m_modval & 0x1F], m_modwritevalb);
+ 		break;
+ 	case 1:
+ 		m_reg[m_modval & 0x1F] -= 2;
+-		m_program->write_word_unaligned(m_reg[m_modval & 0x1F], m_modwritevalh);
++		m_tprog.write_word_unaligned(m_reg[m_modval & 0x1F], m_modwritevalh);
+ 		break;
+ 	case 2:
+ 		m_reg[m_modval & 0x1F] -= 4;
+-		m_program->write_dword_unaligned(m_reg[m_modval & 0x1F], m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_reg[m_modval & 0x1F], m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -104,13 +104,13 @@ uint32_t v60_device::am3Displacement8()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1), m_modwritevalb);
++		m_tprog.write_byte(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1), m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1), m_modwritevalh);
++		m_tprog.write_word_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1), m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1), m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1), m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -122,13 +122,13 @@ uint32_t v60_device::am3Displacement16()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1), m_modwritevalb);
++		m_tprog.write_byte(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1), m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1), m_modwritevalh);
++		m_tprog.write_word_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1), m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1), m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1), m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -140,13 +140,13 @@ uint32_t v60_device::am3Displacement32()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1), m_modwritevalb);
++		m_tprog.write_byte(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1), m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1), m_modwritevalh);
++		m_tprog.write_word_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1), m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1), m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1), m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -159,13 +159,13 @@ uint32_t v60_device::am3DisplacementIndexed8()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F], m_modwritevalb);
++		m_tprog.write_byte(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F], m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
++		m_tprog.write_word_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -177,13 +177,13 @@ uint32_t v60_device::am3DisplacementIndexed16()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F], m_modwritevalb);
++		m_tprog.write_byte(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F], m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
++		m_tprog.write_word_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -195,13 +195,13 @@ uint32_t v60_device::am3DisplacementIndexed32()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F], m_modwritevalb);
++		m_tprog.write_byte(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F], m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
++		m_tprog.write_word_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -214,13 +214,13 @@ uint32_t v60_device::am3PCDisplacement8()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(PC + (int8_t)OpRead8(m_modadd + 1), m_modwritevalb);
++		m_tprog.write_byte(PC + (int8_t)OpRead8(m_modadd + 1), m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(PC + (int8_t)OpRead8(m_modadd + 1), m_modwritevalh);
++		m_tprog.write_word_unaligned(PC + (int8_t)OpRead8(m_modadd + 1), m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1), m_modwritevalw);
++		m_tprog.write_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1), m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -232,13 +232,13 @@ uint32_t v60_device::am3PCDisplacement16()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(PC + (int16_t)OpRead16(m_modadd + 1), m_modwritevalb);
++		m_tprog.write_byte(PC + (int16_t)OpRead16(m_modadd + 1), m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(PC + (int16_t)OpRead16(m_modadd + 1), m_modwritevalh);
++		m_tprog.write_word_unaligned(PC + (int16_t)OpRead16(m_modadd + 1), m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1), m_modwritevalw);
++		m_tprog.write_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1), m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -250,13 +250,13 @@ uint32_t v60_device::am3PCDisplacement32()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(PC + OpRead32(m_modadd + 1), m_modwritevalb);
++		m_tprog.write_byte(PC + OpRead32(m_modadd + 1), m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(PC + OpRead32(m_modadd + 1), m_modwritevalh);
++		m_tprog.write_word_unaligned(PC + OpRead32(m_modadd + 1), m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(PC + OpRead32(m_modadd + 1), m_modwritevalw);
++		m_tprog.write_dword_unaligned(PC + OpRead32(m_modadd + 1), m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -268,13 +268,13 @@ uint32_t v60_device::am3PCDisplacementIndexed8()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(PC + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F], m_modwritevalb);
++		m_tprog.write_byte(PC + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F], m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(PC + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
++		m_tprog.write_word_unaligned(PC + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
++		m_tprog.write_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -286,13 +286,13 @@ uint32_t v60_device::am3PCDisplacementIndexed16()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(PC + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F], m_modwritevalb);
++		m_tprog.write_byte(PC + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F], m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(PC + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
++		m_tprog.write_word_unaligned(PC + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
++		m_tprog.write_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -304,13 +304,13 @@ uint32_t v60_device::am3PCDisplacementIndexed32()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(PC + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F], m_modwritevalb);
++		m_tprog.write_byte(PC + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F], m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(PC + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
++		m_tprog.write_word_unaligned(PC + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(PC + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
++		m_tprog.write_dword_unaligned(PC + OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -322,13 +322,13 @@ uint32_t v60_device::am3DisplacementIndirect8()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)), m_modwritevalb);
++		m_tprog.write_byte(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)), m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)), m_modwritevalh);
++		m_tprog.write_word_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)), m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)), m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)), m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -340,13 +340,13 @@ uint32_t v60_device::am3DisplacementIndirect16()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)), m_modwritevalb);
++		m_tprog.write_byte(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)), m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)), m_modwritevalh);
++		m_tprog.write_word_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)), m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)), m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)), m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -358,13 +358,13 @@ uint32_t v60_device::am3DisplacementIndirect32()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)), m_modwritevalb);
++		m_tprog.write_byte(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)), m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)), m_modwritevalh);
++		m_tprog.write_word_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)), m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)), m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)), m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -377,13 +377,13 @@ uint32_t v60_device::am3DisplacementIndirectIndexed8()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F], m_modwritevalb);
++		m_tprog.write_byte(m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F], m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
++		m_tprog.write_word_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -395,13 +395,13 @@ uint32_t v60_device::am3DisplacementIndirectIndexed16()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F], m_modwritevalb);
++		m_tprog.write_byte(m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F], m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
++		m_tprog.write_word_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -413,13 +413,13 @@ uint32_t v60_device::am3DisplacementIndirectIndexed32()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F], m_modwritevalb);
++		m_tprog.write_byte(m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F], m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
++		m_tprog.write_word_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval2 & 0x1F] + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -431,13 +431,13 @@ uint32_t v60_device::am3PCDisplacementIndirect8()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)), m_modwritevalb);
++		m_tprog.write_byte(m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)), m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)), m_modwritevalh);
++		m_tprog.write_word_unaligned(m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)), m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)), m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)), m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -449,13 +449,13 @@ uint32_t v60_device::am3PCDisplacementIndirect16()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)), m_modwritevalb);
++		m_tprog.write_byte(m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)), m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)), m_modwritevalh);
++		m_tprog.write_word_unaligned(m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)), m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)), m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)), m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -467,13 +467,13 @@ uint32_t v60_device::am3PCDisplacementIndirect32()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 1)), m_modwritevalb);
++		m_tprog.write_byte(m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 1)), m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 1)), m_modwritevalh);
++		m_tprog.write_word_unaligned(m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 1)), m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 1)), m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 1)), m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -486,13 +486,13 @@ uint32_t v60_device::am3PCDisplacementIndirectIndexed8()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F], m_modwritevalb);
++		m_tprog.write_byte(m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F], m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
++		m_tprog.write_word_unaligned(m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -504,13 +504,13 @@ uint32_t v60_device::am3PCDisplacementIndirectIndexed16()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F], m_modwritevalb);
++		m_tprog.write_byte(m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F], m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
++		m_tprog.write_word_unaligned(m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -522,13 +522,13 @@ uint32_t v60_device::am3PCDisplacementIndirectIndexed32()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F], m_modwritevalb);
++		m_tprog.write_byte(m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F], m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
++		m_tprog.write_word_unaligned(m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -541,13 +541,13 @@ uint32_t v60_device::am3DoubleDisplacement8()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2), m_modwritevalb);
++		m_tprog.write_byte(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2), m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2), m_modwritevalh);
++		m_tprog.write_word_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2), m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2), m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2), m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -559,13 +559,13 @@ uint32_t v60_device::am3DoubleDisplacement16()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3), m_modwritevalb);
++		m_tprog.write_byte(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3), m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3), m_modwritevalh);
++		m_tprog.write_word_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3), m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3), m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3), m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -577,13 +577,13 @@ uint32_t v60_device::am3DoubleDisplacement32()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5), m_modwritevalb);
++		m_tprog.write_byte(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5), m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5), m_modwritevalh);
++		m_tprog.write_word_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5), m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_program->read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5), m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_tprog.read_dword_unaligned(m_reg[m_modval & 0x1F] + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5), m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -596,13 +596,13 @@ uint32_t v60_device::am3PCDoubleDisplacement8()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2), m_modwritevalb);
++		m_tprog.write_byte(m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2), m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2), m_modwritevalh);
++		m_tprog.write_word_unaligned(m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2), m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_program->read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2), m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_tprog.read_dword_unaligned(PC + (int8_t)OpRead8(m_modadd + 1)) + (int8_t)OpRead8(m_modadd + 2), m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -614,13 +614,13 @@ uint32_t v60_device::am3PCDoubleDisplacement16()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3), m_modwritevalb);
++		m_tprog.write_byte(m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3), m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3), m_modwritevalh);
++		m_tprog.write_word_unaligned(m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3), m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_program->read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3), m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_tprog.read_dword_unaligned(PC + (int16_t)OpRead16(m_modadd + 1)) + (int16_t)OpRead16(m_modadd + 3), m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -632,13 +632,13 @@ uint32_t v60_device::am3PCDoubleDisplacement32()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5), m_modwritevalb);
++		m_tprog.write_byte(m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5), m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5), m_modwritevalh);
++		m_tprog.write_word_unaligned(m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5), m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_program->read_dword_unaligned(PC + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5), m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_tprog.read_dword_unaligned(PC + OpRead32(m_modadd + 1)) + OpRead32(m_modadd + 5), m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -650,13 +650,13 @@ uint32_t v60_device::am3DirectAddress()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(OpRead32(m_modadd + 1), m_modwritevalb);
++		m_tprog.write_byte(OpRead32(m_modadd + 1), m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(OpRead32(m_modadd + 1), m_modwritevalh);
++		m_tprog.write_word_unaligned(OpRead32(m_modadd + 1), m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(OpRead32(m_modadd + 1), m_modwritevalw);
++		m_tprog.write_dword_unaligned(OpRead32(m_modadd + 1), m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -668,13 +668,13 @@ uint32_t v60_device::am3DirectAddressIndexed()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F], m_modwritevalb);
++		m_tprog.write_byte(OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F], m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
++		m_tprog.write_word_unaligned(OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 2, m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
++		m_tprog.write_dword_unaligned(OpRead32(m_modadd + 2) + m_reg[m_modval & 0x1F] * 4, m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -686,13 +686,13 @@ uint32_t v60_device::am3DirectAddressDeferred()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_program->read_dword_unaligned(OpRead32(m_modadd + 1)), m_modwritevalb);
++		m_tprog.write_byte(m_tprog.read_dword_unaligned(OpRead32(m_modadd + 1)), m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_program->read_dword_unaligned(OpRead32(m_modadd + 1)), m_modwritevalh);
++		m_tprog.write_word_unaligned(m_tprog.read_dword_unaligned(OpRead32(m_modadd + 1)), m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_program->read_dword_unaligned(OpRead32(m_modadd + 1)), m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_tprog.read_dword_unaligned(OpRead32(m_modadd + 1)), m_modwritevalw);
+ 		break;
+ 	}
+ 
+@@ -704,13 +704,13 @@ uint32_t v60_device::am3DirectAddressDeferredIndexed()
+ 	switch (m_moddim)
+ 	{
+ 	case 0:
+-		m_program->write_byte(m_program->read_dword_unaligned(OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F], m_modwritevalb);
++		m_tprog.write_byte(m_tprog.read_dword_unaligned(OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F], m_modwritevalb);
+ 		break;
+ 	case 1:
+-		m_program->write_word_unaligned(m_program->read_dword_unaligned(OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F], m_modwritevalh);
++		m_tprog.write_word_unaligned(m_tprog.read_dword_unaligned(OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F], m_modwritevalh);
+ 		break;
+ 	case 2:
+-		m_program->write_dword_unaligned(m_program->read_dword_unaligned(OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F], m_modwritevalw);
++		m_tprog.write_dword_unaligned(m_tprog.read_dword_unaligned(OpRead32(m_modadd + 2)) + m_reg[m_modval & 0x1F], m_modwritevalw);
+ 		break;
+ 	}
+ 
+diff --git a/src/devices/cpu/v60/op12.hxx b/src/devices/cpu/v60/op12.hxx
+index 899f76e75a..fe2f97fb04 100644
+--- a/src/devices/cpu/v60/op12.hxx
++++ b/src/devices/cpu/v60/op12.hxx
+@@ -21,37 +21,37 @@
+ 	if (m_flag##num)                                \
+ 		appb = (uint8_t)m_reg[m_op##num];         \
+ 	else                                                \
+-		appb = m_program->read_byte(m_op##num);
++		appb = m_tprog.read_byte(m_op##num);
+ 
+ #define F12LOADOPHALF(num)                          \
+ 	if (m_flag##num)                                \
+ 		apph = (uint16_t)m_reg[m_op##num];        \
+ 	else                                                \
+-		apph = m_program->read_word_unaligned(m_op##num);
++		apph = m_tprog.read_word_unaligned(m_op##num);
+ 
+ #define F12LOADOPWORD(num)                          \
+ 	if (m_flag##num)                                \
+ 		appw = m_reg[m_op##num];                \
+ 	else                                                \
+-		appw = m_program->read_dword_unaligned(m_op##num);
++		appw = m_tprog.read_dword_unaligned(m_op##num);
+ 
+ #define F12STOREOPBYTE(num)                         \
+ 	if (m_flag##num)                                \
+ 		SETREG8(m_reg[m_op##num], appb);        \
+ 	else                                                \
+-		m_program->write_byte(m_op##num, appb);
++		m_tprog.write_byte(m_op##num, appb);
+ 
+ #define F12STOREOPHALF(num)                         \
+ 	if (m_flag##num)                                \
+ 		SETREG16(m_reg[m_op##num], apph);       \
+ 	else                                                \
+-		m_program->write_word_unaligned(m_op##num, apph);
++		m_tprog.write_word_unaligned(m_op##num, apph);
+ 
+ #define F12STOREOPWORD(num)                         \
+ 	if (m_flag##num)                                \
+ 		m_reg[m_op##num] = appw;                \
+ 	else                                                \
+-		m_program->write_dword_unaligned(m_op##num, appw);
++		m_tprog.write_dword_unaligned(m_op##num, appw);
+ 
+ #define F12LOADOP1BYTE()  F12LOADOPBYTE(1)
+ #define F12LOADOP1HALF()  F12LOADOPHALF(1)
+@@ -397,11 +397,11 @@ uint32_t v60_device::opCALL() /* TRUSTED */
+ 	F12DecodeOperands(&v60_device::ReadAMAddress, 0,&v60_device::ReadAMAddress, 2);
+ 
+ 	SP -= 4;
+-	m_program->write_dword_unaligned(SP, AP);
++	m_tprog.write_dword_unaligned(SP, AP);
+ 	AP = m_op2;
+ 
+ 	SP -= 4;
+-	m_program->write_dword_unaligned(SP, PC + m_amlength1 + m_amlength2 + 2);
++	m_tprog.write_dword_unaligned(SP, PC + m_amlength1 + m_amlength2 + 2);
+ 	PC = m_op1;
+ 
+ 	return 0;
+@@ -457,16 +457,16 @@ uint32_t v60_device::opCHLVL()
+ 	oldPSW = v60_update_psw_for_exception(0, m_op1);
+ 
+ 	SP -= 4;
+-	m_program->write_dword_unaligned(SP, m_op2);
++	m_tprog.write_dword_unaligned(SP, m_op2);
+ 
+ 	SP -= 4;
+-	m_program->write_dword_unaligned(SP, EXCEPTION_CODE_AND_SIZE(0x1800 + m_op1 * 0x100, 8));
++	m_tprog.write_dword_unaligned(SP, EXCEPTION_CODE_AND_SIZE(0x1800 + m_op1 * 0x100, 8));
+ 
+ 	SP -= 4;
+-	m_program->write_dword_unaligned(SP, oldPSW);
++	m_tprog.write_dword_unaligned(SP, oldPSW);
+ 
+ 	SP -= 4;
+-	m_program->write_dword_unaligned(SP, PC + m_amlength1 + m_amlength2 + 2);
++	m_tprog.write_dword_unaligned(SP, PC + m_amlength1 + m_amlength2 + 2);
+ 
+ 	PC = GETINTVECT(24 + m_op1);
+ 
+@@ -582,7 +582,7 @@ uint32_t v60_device::opDIVX()
+ 	if (m_flag2)
+ 		dv = ((uint64_t)m_reg[(m_op2 & 0x1F) + 1] << 32) | m_reg[m_op2 & 0x1F];
+ 	else
+-		dv = m_program->read_qword_unaligned(m_op2);
++		dv = m_tprog.read_qword_unaligned(m_op2);
+ 
+ 	a = div_64x32_rem(dv, m_op1, b);
+ 
+@@ -596,8 +596,8 @@ uint32_t v60_device::opDIVX()
+ 	}
+ 	else
+ 	{
+-		m_program->write_dword_unaligned(m_op2, a);
+-		m_program->write_dword_unaligned(m_op2 + 4, b);
++		m_tprog.write_dword_unaligned(m_op2, a);
++		m_tprog.write_dword_unaligned(m_op2 + 4, b);
+ 	}
+ 
+ 	F12END();
+@@ -613,7 +613,7 @@ uint32_t v60_device::opDIVUX()
+ 	if (m_flag2)
+ 		dv = ((uint64_t)m_reg[(m_op2 & 0x1F) + 1] << 32) | m_reg[m_op2 & 0x1F];
+ 	else
+-		dv = m_program->read_qword_unaligned(m_op2);
++		dv = m_tprog.read_qword_unaligned(m_op2);
+ 
+ 	a = divu_64x32_rem(dv, m_op1, b);
+ 
+@@ -627,8 +627,8 @@ uint32_t v60_device::opDIVUX()
+ 	}
+ 	else
+ 	{
+-		m_program->write_dword_unaligned(m_op2, a);
+-		m_program->write_dword_unaligned(m_op2 + 4, b);
++		m_tprog.write_dword_unaligned(m_op2, a);
++		m_tprog.write_dword_unaligned(m_op2 + 4, b);
+ 	}
+ 
+ 	F12END();
+@@ -686,11 +686,13 @@ uint32_t v60_device::opDIVUW() /* TRUSTED */
+ uint32_t v60_device::opINB()
+ {
+ 	F12DecodeFirstOperand(&v60_device::ReadAMAddress, 0);
+-	m_modwritevalb = m_io->read_byte(m_op1);
++	m_modwritevalb = m_tio.read_byte(m_op1);
+ 
+ 	if ( m_stall_io )
+ 	{
+ 		m_stall_io = 0;
++		m_stalled = true; // attract-mode-cores: repeated, not counted
++		if (m_trace) trace_rec(0x12, &m_insn_count, 8);
+ 		return 0;
+ 	}
+ 
+@@ -701,11 +703,13 @@ uint32_t v60_device::opINB()
+ uint32_t v60_device::opINH()
+ {
+ 	F12DecodeFirstOperand(&v60_device::ReadAMAddress, 1);
+-	m_modwritevalh = m_io->read_word_unaligned(m_op1);
++	m_modwritevalh = m_tio.read_word_unaligned(m_op1);
+ 
+ 	if ( m_stall_io )
+ 	{
+ 		m_stall_io = 0;
++		m_stalled = true; // attract-mode-cores: repeated, not counted
++		if (m_trace) trace_rec(0x12, &m_insn_count, 8);
+ 		return 0;
+ 	}
+ 
+@@ -716,11 +720,13 @@ uint32_t v60_device::opINH()
+ uint32_t v60_device::opINW()
+ {
+ 	F12DecodeFirstOperand(&v60_device::ReadAMAddress, 2);
+-	m_modwritevalw = m_io->read_dword_unaligned(m_op1);
++	m_modwritevalw = m_tio.read_dword_unaligned(m_op1);
+ 
+ 	if ( m_stall_io )
+ 	{
+ 		m_stall_io = 0;
++		m_stalled = true; // attract-mode-cores: repeated, not counted
++		if (m_trace) trace_rec(0x12, &m_insn_count, 8);
+ 		return 0;
+ 	}
+ 
+@@ -754,22 +760,22 @@ uint32_t v60_device::opLDTASK()
+ 
+ 	TR = m_op2;
+ 
+-	TKCW = m_program->read_dword_unaligned(m_op2);
++	TKCW = m_tprog.read_dword_unaligned(m_op2);
+ 	m_op2 += 4;
+ 	if(SYCW & 0x100) {
+-		L0SP = m_program->read_dword_unaligned(m_op2);
++		L0SP = m_tprog.read_dword_unaligned(m_op2);
+ 		m_op2 += 4;
+ 	}
+ 	if(SYCW & 0x200) {
+-		L1SP = m_program->read_dword_unaligned(m_op2);
++		L1SP = m_tprog.read_dword_unaligned(m_op2);
+ 		m_op2 += 4;
+ 	}
+ 	if(SYCW & 0x400) {
+-		L2SP = m_program->read_dword_unaligned(m_op2);
++		L2SP = m_tprog.read_dword_unaligned(m_op2);
+ 		m_op2 += 4;
+ 	}
+ 	if(SYCW & 0x800) {
+-		L3SP = m_program->read_dword_unaligned(m_op2);
++		L3SP = m_tprog.read_dword_unaligned(m_op2);
+ 		m_op2 += 4;
+ 	}
+ 
+@@ -778,7 +784,7 @@ uint32_t v60_device::opLDTASK()
+ 	// 31 registers supported, _not_ 32
+ 	for(i = 0; i < 31; i++)
+ 		if(m_op1 & (1 << i)) {
+-			m_reg[i] = m_program->read_dword_unaligned(m_op2);
++			m_reg[i] = m_tprog.read_dword_unaligned(m_op2);
+ 			m_op2 += 4;
+ 		}
+ 
+@@ -796,7 +802,7 @@ uint32_t v60_device::opMOVD() /* TRUSTED */
+ 	if (m_flag1)
+ 		d = ((uint64_t)m_reg[(m_op1 & 0x1F) + 1] << 32) | m_reg[m_op1 & 0x1F];
+ 	else
+-		d = m_program->read_qword_unaligned(m_op1);
++		d = m_tprog.read_qword_unaligned(m_op1);
+ 
+ 	if (m_flag2)
+ 	{
+@@ -804,7 +810,7 @@ uint32_t v60_device::opMOVD() /* TRUSTED */
+ 		m_reg[(m_op2 & 0x1F) + 1] = (uint32_t)(d >> 32);
+ 	}
+ 	else
+-		m_program->write_qword_unaligned(m_op2, d);
++		m_tprog.write_qword_unaligned(m_op2, d);
+ 
+ 	F12END();
+ }
+@@ -1201,21 +1207,21 @@ uint32_t v60_device::opORW() /* TRUSTED (C too!) */
+ uint32_t v60_device::opOUTB()
+ {
+ 	F12DecodeOperands(&v60_device::ReadAM, 0,&v60_device::ReadAMAddress, 2);
+-	m_io->write_byte(m_op2,(uint8_t)m_op1);
++	m_tio.write_byte(m_op2,(uint8_t)m_op1);
+ 	F12END();
+ }
+ 
+ uint32_t v60_device::opOUTH()
+ {
+ 	F12DecodeOperands(&v60_device::ReadAM, 1,&v60_device::ReadAMAddress, 2);
+-	m_io->write_word_unaligned(m_op2,(uint16_t)m_op1);
++	m_tio.write_word_unaligned(m_op2,(uint16_t)m_op1);
+ 	F12END();
+ }
+ 
+ uint32_t v60_device::opOUTW()
+ {
+ 	F12DecodeOperands(&v60_device::ReadAM, 2,&v60_device::ReadAMAddress, 2);
+-	m_io->write_dword_unaligned(m_op2, m_op1);
++	m_tio.write_dword_unaligned(m_op2, m_op1);
+ 	F12END();
+ }
+ 
+@@ -2275,7 +2281,7 @@ uint32_t v60_device::opMULX()
+ 	}
+ 	else
+ 	{
+-		a = m_program->read_dword_unaligned(m_op2);
++		a = m_tprog.read_dword_unaligned(m_op2);
+ 	}
+ 
+ 	res = mul_32x32(a, m_op1);
+@@ -2292,7 +2298,7 @@ uint32_t v60_device::opMULX()
+ 		m_reg[(m_op2 & 0x1F) + 1] = b;
+ 	}
+ 	else
+-		m_program->write_qword_unaligned(m_op2, res);
++		m_tprog.write_qword_unaligned(m_op2, res);
+ 
+ 	F12END();
+ }
+@@ -2310,7 +2316,7 @@ uint32_t v60_device::opMULUX()
+ 	}
+ 	else
+ 	{
+-		a = m_program->read_dword_unaligned(m_op2);
++		a = m_tprog.read_dword_unaligned(m_op2);
+ 	}
+ 
+ 	res = mulu_32x32(a, m_op1);
+@@ -2326,7 +2332,7 @@ uint32_t v60_device::opMULUX()
+ 		m_reg[(m_op2 & 0x1F) + 1] = b;
+ 	}
+ 	else
+-		m_program->write_qword_unaligned(m_op2, res);
++		m_tprog.write_qword_unaligned(m_op2, res);
+ 
+ 	F12END();
+ }
+diff --git a/src/devices/cpu/v60/op2.hxx b/src/devices/cpu/v60/op2.hxx
+index 8227405ddc..8e4279e018 100644
+--- a/src/devices/cpu/v60/op2.hxx
++++ b/src/devices/cpu/v60/op2.hxx
+@@ -8,13 +8,13 @@
+ 	if (m_flag##num)                                    \
+ 		appf = u2f(m_reg[m_op##num]);               \
+ 	else                                                    \
+-		appf = u2f(m_program->read_dword_unaligned(m_op##num));
++		appf = u2f(m_tprog.read_dword_unaligned(m_op##num));
+ 
+ #define F2STOREOPFLOAT(num)                              \
+ 	if (m_flag##num)                                    \
+ 		m_reg[m_op##num] = f2u(appf);               \
+ 	else                                                    \
+-		m_program->write_dword_unaligned(m_op##num, f2u(appf));
++		m_tprog.write_dword_unaligned(m_op##num, f2u(appf));
+ 
+ void v60_device::F2DecodeFirstOperand(am_func DecodeOp1, uint8_t dim1)
+ {
+diff --git a/src/devices/cpu/v60/op3.hxx b/src/devices/cpu/v60/op3.hxx
+index b139cef7dc..887b2789bd 100644
+--- a/src/devices/cpu/v60/op3.hxx
++++ b/src/devices/cpu/v60/op3.hxx
+@@ -11,14 +11,14 @@ uint32_t v60_device::opINCB() /* TRUSTED */
+ 	if (m_amflag)
+ 		appb = (uint8_t)m_reg[m_amout];
+ 	else
+-		appb = m_program->read_byte(m_amout);
++		appb = m_tprog.read_byte(m_amout);
+ 
+ 	ADDB(appb, 1, 0);
+ 
+ 	if (m_amflag)
+ 		SETREG8(m_reg[m_amout], appb);
+ 	else
+-		m_program->write_byte(m_amout, appb);
++		m_tprog.write_byte(m_amout, appb);
+ 
+ 	return m_amlength1 + 1;
+ }
+@@ -34,14 +34,14 @@ uint32_t v60_device::opINCH() /* TRUSTED */
+ 	if (m_amflag)
+ 		apph = (uint16_t)m_reg[m_amout];
+ 	else
+-		apph = m_program->read_word_unaligned(m_amout);
++		apph = m_tprog.read_word_unaligned(m_amout);
+ 
+ 	ADDW(apph, 1, 0);
+ 
+ 	if (m_amflag)
+ 		SETREG16(m_reg[m_amout], apph);
+ 	else
+-		m_program->write_word_unaligned(m_amout, apph);
++		m_tprog.write_word_unaligned(m_amout, apph);
+ 
+ 	return m_amlength1 + 1;
+ }
+@@ -57,14 +57,14 @@ uint32_t v60_device::opINCW() /* TRUSTED */
+ 	if (m_amflag)
+ 		appw = m_reg[m_amout];
+ 	else
+-		appw = m_program->read_dword_unaligned(m_amout);
++		appw = m_tprog.read_dword_unaligned(m_amout);
+ 
+ 	ADDL(appw, 1, 0);
+ 
+ 	if (m_amflag)
+ 		m_reg[m_amout] = appw;
+ 	else
+-		m_program->write_dword_unaligned(m_amout, appw);
++		m_tprog.write_dword_unaligned(m_amout, appw);
+ 
+ 	return m_amlength1 + 1;
+ }
+@@ -80,14 +80,14 @@ uint32_t v60_device::opDECB() /* TRUSTED */
+ 	if (m_amflag)
+ 		appb = (uint8_t)m_reg[m_amout];
+ 	else
+-		appb = m_program->read_byte(m_amout);
++		appb = m_tprog.read_byte(m_amout);
+ 
+ 	SUBB(appb, 1, 0);
+ 
+ 	if (m_amflag)
+ 		SETREG8(m_reg[m_amout], appb);
+ 	else
+-		m_program->write_byte(m_amout, appb);
++		m_tprog.write_byte(m_amout, appb);
+ 
+ 	return m_amlength1 + 1;
+ }
+@@ -103,14 +103,14 @@ uint32_t v60_device::opDECH() /* TRUSTED */
+ 	if (m_amflag)
+ 		apph = (uint16_t)m_reg[m_amout];
+ 	else
+-		apph = m_program->read_word_unaligned(m_amout);
++		apph = m_tprog.read_word_unaligned(m_amout);
+ 
+ 	SUBW(apph, 1, 0);
+ 
+ 	if (m_amflag)
+ 		SETREG16(m_reg[m_amout], apph);
+ 	else
+-		m_program->write_word_unaligned(m_amout, apph);
++		m_tprog.write_word_unaligned(m_amout, apph);
+ 
+ 	return m_amlength1 + 1;
+ }
+@@ -126,14 +126,14 @@ uint32_t v60_device::opDECW() /* TRUSTED */
+ 	if (m_amflag)
+ 		appw = m_reg[m_amout];
+ 	else
+-		appw = m_program->read_dword_unaligned(m_amout);
++		appw = m_tprog.read_dword_unaligned(m_amout);
+ 
+ 	SUBL(appw, 1, 0);
+ 
+ 	if (m_amflag)
+ 		m_reg[m_amout] = appw;
+ 	else
+-		m_program->write_dword_unaligned(m_amout, appw);
++		m_tprog.write_dword_unaligned(m_amout, appw);
+ 
+ 	return m_amlength1 + 1;
+ }
+@@ -168,7 +168,7 @@ uint32_t v60_device::opJSR() /* TRUSTED */
+ 
+ 	// Save NextPC into the stack
+ 	SP -= 4;
+-	m_program->write_dword_unaligned(SP, PC + m_amlength1 + 1);
++	m_tprog.write_dword_unaligned(SP, PC + m_amlength1 + 1);
+ 
+ 	// Jump there
+ 	PC = m_amout;
+@@ -186,7 +186,7 @@ uint32_t v60_device::opPREPARE()    /* somewhat TRUSTED */
+ 
+ 	// step 1: save frame pointer on the stack
+ 	SP -= 4;
+-	m_program->write_dword_unaligned(SP, FP);
++	m_tprog.write_dword_unaligned(SP, FP);
+ 
+ 	// step 2: FP = new SP
+ 	FP = SP;
+@@ -206,11 +206,11 @@ uint32_t v60_device::opRET() /* TRUSTED */
+ 	ReadAM();
+ 
+ 	// Read return address from stack
+-	PC = m_program->read_dword_unaligned(SP);
++	PC = m_tprog.read_dword_unaligned(SP);
+ 	SP +=4;
+ 
+ 	// Restore AP from stack
+-	AP = m_program->read_dword_unaligned(SP);
++	AP = m_tprog.read_dword_unaligned(SP);
+ 	SP +=4;
+ 
+ 	// Skip stack frame
+@@ -286,13 +286,13 @@ uint32_t v60_device::opTRAP()
+ 
+ 	// Issue the software trap with interrupts
+ 	SP -= 4;
+-	m_program->write_dword_unaligned(SP, EXCEPTION_CODE_AND_SIZE(0x3000 + 0x100 * (m_amout & 0xF), 4));
++	m_tprog.write_dword_unaligned(SP, EXCEPTION_CODE_AND_SIZE(0x3000 + 0x100 * (m_amout & 0xF), 4));
+ 
+ 	SP -= 4;
+-	m_program->write_dword_unaligned(SP, oldPSW);
++	m_tprog.write_dword_unaligned(SP, oldPSW);
+ 
+ 	SP -= 4;
+-	m_program->write_dword_unaligned(SP, PC + m_amlength1 + 1);
++	m_tprog.write_dword_unaligned(SP, PC + m_amlength1 + 1);
+ 
+ 	PC = GETINTVECT(48 + (m_amout & 0xF));
+ 
+@@ -309,10 +309,10 @@ uint32_t v60_device::opRETIU() /* TRUSTED */
+ 	ReadAM();
+ 
+ 	// Restore PC and PSW from stack
+-	PC = m_program->read_dword_unaligned(SP);
++	PC = m_tprog.read_dword_unaligned(SP);
+ 	SP += 4;
+ 
+-	newPSW = m_program->read_dword_unaligned(SP);
++	newPSW = m_tprog.read_dword_unaligned(SP);
+ 	SP += 4;
+ 
+ 	// Destroy stack frame
+@@ -334,10 +334,10 @@ uint32_t v60_device::opRETIS()
+ 	ReadAM();
+ 
+ 	// Restore PC and PSW from stack
+-	PC = m_program->read_dword_unaligned(SP);
++	PC = m_tprog.read_dword_unaligned(SP);
+ 	SP += 4;
+ 
+-	newPSW = m_program->read_dword_unaligned(SP);
++	newPSW = m_tprog.read_dword_unaligned(SP);
+ 	SP += 4;
+ 
+ 	// Destroy stack frame
+@@ -363,29 +363,29 @@ uint32_t v60_device::opSTTASK()
+ 	v60WritePSW(v60ReadPSW() | 0x10000000);
+ 	v60SaveStack();
+ 
+-	m_program->write_dword_unaligned(adr, TKCW);
++	m_tprog.write_dword_unaligned(adr, TKCW);
+ 	adr += 4;
+ 	if(SYCW & 0x100) {
+-		m_program->write_dword_unaligned(adr, L0SP);
++		m_tprog.write_dword_unaligned(adr, L0SP);
+ 		adr += 4;
+ 	}
+ 	if(SYCW & 0x200) {
+-		m_program->write_dword_unaligned(adr, L1SP);
++		m_tprog.write_dword_unaligned(adr, L1SP);
+ 		adr += 4;
+ 	}
+ 	if(SYCW & 0x400) {
+-		m_program->write_dword_unaligned(adr, L2SP);
++		m_tprog.write_dword_unaligned(adr, L2SP);
+ 		adr += 4;
+ 	}
+ 	if(SYCW & 0x800) {
+-		m_program->write_dword_unaligned(adr, L3SP);
++		m_tprog.write_dword_unaligned(adr, L3SP);
+ 		adr += 4;
+ 	}
+ 
+ 	// 31 registers supported, _not_ 32
+ 	for(i = 0; i < 31; i++)
+ 		if(m_amout & (1 << i)) {
+-			m_program->write_dword_unaligned(adr, m_reg[i]);
++			m_tprog.write_dword_unaligned(adr, m_reg[i]);
+ 			adr += 4;
+ 		}
+ 
+@@ -419,7 +419,7 @@ uint32_t v60_device::opTASI()
+ 	if (m_amflag)
+ 		appb = (uint8_t)m_reg[m_amout & 0x1f];
+ 	else
+-		appb = m_program->read_byte(m_amout);
++		appb = m_tprog.read_byte(m_amout);
+ 
+ 	// Set the flags for SUB appb, FF
+ 	SUBB(appb, 0xff, 0);
+@@ -428,7 +428,7 @@ uint32_t v60_device::opTASI()
+ 	if (m_amflag)
+ 		SETREG8(m_reg[m_amout & 0x1f], 0xff);
+ 	else
+-		m_program->write_byte(m_amout, 0xff);
++		m_tprog.write_byte(m_amout, 0xff);
+ 
+ 	return m_amlength1 + 1;
+ }
+@@ -459,13 +459,13 @@ uint32_t v60_device::opPOPM()
+ 	for (i = 0;i < 31;i++)
+ 		if (m_amout & (1 << i))
+ 		{
+-			m_reg[i] = m_program->read_dword_unaligned(SP);
++			m_reg[i] = m_tprog.read_dword_unaligned(SP);
+ 			SP += 4;
+ 		}
+ 
+ 	if (m_amout & (1 << 31))
+ 	{
+-		v60WritePSW((v60ReadPSW() & 0xffff0000) | m_program->read_word_unaligned(SP));
++		v60WritePSW((v60ReadPSW() & 0xffff0000) | m_tprog.read_word_unaligned(SP));
+ 		SP += 4;
+ 	}
+ 
+@@ -485,14 +485,14 @@ uint32_t v60_device::opPUSHM()
+ 	if (m_amout & (1 << 31))
+ 	{
+ 		SP -= 4;
+-		m_program->write_dword_unaligned(SP, v60ReadPSW());
++		m_tprog.write_dword_unaligned(SP, v60ReadPSW());
+ 	}
+ 
+ 	for (i = 0;i < 31;i++)
+ 		if (m_amout & (1 << (30 - i)))
+ 		{
+ 			SP -= 4;
+-			m_program->write_dword_unaligned(SP, m_reg[(30 - i)]);
++			m_tprog.write_dword_unaligned(SP, m_reg[(30 - i)]);
+ 		}
+ 
+ 
+@@ -555,7 +555,7 @@ uint32_t v60_device::opPUSH()
+ 	m_amlength1 = ReadAM();
+ 
+ 	SP-=4;
+-	m_program->write_dword_unaligned(SP, m_amout);
++	m_tprog.write_dword_unaligned(SP, m_amout);
+ 
+ 	return m_amlength1 + 1;
+ }
+@@ -564,7 +564,7 @@ uint32_t v60_device::opPOP()
+ {
+ 	m_modadd = PC + 1;
+ 	m_moddim = 2;
+-	m_modwritevalw = m_program->read_dword_unaligned(SP);
++	m_modwritevalw = m_tprog.read_dword_unaligned(SP);
+ 	SP +=4;
+ 	m_amlength1 = WriteAM();
+ 
+diff --git a/src/devices/cpu/v60/op4.hxx b/src/devices/cpu/v60/op4.hxx
+index edef480789..3e3794dcea 100644
+--- a/src/devices/cpu/v60/op4.hxx
++++ b/src/devices/cpu/v60/op4.hxx
+@@ -346,7 +346,7 @@ uint32_t v60_device::opBSR() /* TRUSTED */
+ {
+ 	// Save Next PC onto the stack
+ 	SP -= 4;
+-	m_program->write_dword_unaligned(SP, PC + 3);
++	m_tprog.write_dword_unaligned(SP, PC + 3);
+ 
+ 	// Jump to subroutine
+ 	PC += (int16_t)OpRead16(PC + 1);
+diff --git a/src/devices/cpu/v60/op5.hxx b/src/devices/cpu/v60/op5.hxx
+index a70a1809ce..212f361f46 100644
+--- a/src/devices/cpu/v60/op5.hxx
++++ b/src/devices/cpu/v60/op5.hxx
+@@ -10,11 +10,11 @@ uint32_t v60_device::opBRK()
+     uint32_t oldPSW = v60_update_psw_for_exception(0, 0);
+ 
+     SP -=4;
+-    m_program->write_dword_unaligned(SP, EXCEPTION_CODE_AND_SIZE(0x0d00, 4));
++    m_tprog.write_dword_unaligned(SP, EXCEPTION_CODE_AND_SIZE(0x0d00, 4));
+     SP -=4;
+-    m_program->write_dword_unaligned(SP, oldPSW);
++    m_tprog.write_dword_unaligned(SP, oldPSW);
+     SP -=4;
+-    m_program->write_dword_unaligned(SP, PC + 1);
++    m_tprog.write_dword_unaligned(SP, PC + 1);
+     PC = GETINTVECT(13);
+ */
+ 	logerror("Skipping BRK opcode! PC=%x", PC);
+@@ -27,13 +27,13 @@ uint32_t v60_device::opBRKV()
+ 	uint32_t oldPSW = v60_update_psw_for_exception(0, 0);
+ 
+ 	SP -=4;
+-	m_program->write_dword_unaligned(SP, PC);
++	m_tprog.write_dword_unaligned(SP, PC);
+ 	SP -=4;
+-	m_program->write_dword_unaligned(SP, EXCEPTION_CODE_AND_SIZE(0x1501, 4));
++	m_tprog.write_dword_unaligned(SP, EXCEPTION_CODE_AND_SIZE(0x1501, 4));
+ 	SP -=4;
+-	m_program->write_dword_unaligned(SP, oldPSW);
++	m_tprog.write_dword_unaligned(SP, oldPSW);
+ 	SP -=4;
+-	m_program->write_dword_unaligned(SP, PC + 1);
++	m_tprog.write_dword_unaligned(SP, PC + 1);
+ 	PC = GETINTVECT(21);
+ 
+ 	return 0;
+@@ -49,7 +49,7 @@ uint32_t v60_device::opCLRTLBA()
+ uint32_t v60_device::opDISPOSE()
+ {
+ 	SP = FP;
+-	FP = m_program->read_dword_unaligned(SP);
++	FP = m_tprog.read_dword_unaligned(SP);
+ 	SP +=4;
+ 
+ 	return 1;
+@@ -69,7 +69,7 @@ uint32_t v60_device::opNOP() /* TRUSTED */
+ 
+ uint32_t v60_device::opRSR()
+ {
+-	PC = m_program->read_dword_unaligned(SP);
++	PC = m_tprog.read_dword_unaligned(SP);
+ 	SP +=4;
+ 
+ 	return 0;
+diff --git a/src/devices/cpu/v60/op7a.hxx b/src/devices/cpu/v60/op7a.hxx
+index 0776c7908d..1304436b9a 100644
+--- a/src/devices/cpu/v60/op7a.hxx
++++ b/src/devices/cpu/v60/op7a.hxx
+@@ -138,26 +138,26 @@ void v60_device::F7cDecodeOperands(am_func DecodeOp1, uint8_t dim1, am_func Deco
+ 	if (m_flag1) \
+ 		appb = (uint8_t)(m_reg[m_op1]&0xFF); \
+ 	else \
+-		appb = m_program->read_byte(m_op1);
++		appb = m_tprog.read_byte(m_op1);
+ 
+ #define F7CLOADOP2BYTE(appb) \
+ 	if (m_flag2) \
+ 		appb = (uint8_t)(m_reg[m_op2]&0xFF); \
+ 	else \
+-		appb = m_program->read_byte(m_op2);
++		appb = m_tprog.read_byte(m_op2);
+ 
+ 
+ #define F7CSTOREOP2BYTE() \
+ 	if (m_flag2) \
+ 		SETREG8(m_reg[m_op2], appb); \
+ 	else \
+-		m_program->write_byte(m_op2, appb);
++		m_tprog.write_byte(m_op2, appb);
+ 
+ #define F7CSTOREOP2HALF() \
+ 	if (m_flag2) \
+ 		SETREG16(m_reg[m_op2], apph); \
+ 	else \
+-		m_program->write_word_unaligned(m_op2, apph);
++		m_tprog.write_word_unaligned(m_op2, apph);
+ 
+ uint32_t v60_device::opCMPSTRB(uint8_t bFill, uint8_t bStop)
+ {
+@@ -172,12 +172,12 @@ uint32_t v60_device::opCMPSTRB(uint8_t bFill, uint8_t bStop)
+ 		if (m_lenop1 < m_lenop2)
+ 		{
+ 			for (i = m_lenop1; i < m_lenop2; i++)
+-				m_program->write_byte(m_op1 + i,(uint8_t)R26);
++				m_tprog.write_byte(m_op1 + i,(uint8_t)R26);
+ 		}
+ 		else if (m_lenop2 < m_lenop1)
+ 		{
+ 			for (i = m_lenop2; i < m_lenop1; i++)
+-				m_program->write_byte(m_op2 + i,(uint8_t)R26);
++				m_tprog.write_byte(m_op2 + i,(uint8_t)R26);
+ 		}
+ 	}
+ 
+@@ -189,8 +189,8 @@ uint32_t v60_device::opCMPSTRB(uint8_t bFill, uint8_t bStop)
+ 
+ 	for (i = 0; i < dest; i++)
+ 	{
+-		c1 = m_program->read_byte(m_op1 + i);
+-		c2 = m_program->read_byte(m_op2 + i);
++		c1 = m_tprog.read_byte(m_op1 + i);
++		c2 = m_tprog.read_byte(m_op2 + i);
+ 
+ 		if (c1 > c2)
+ 		{
+@@ -238,12 +238,12 @@ uint32_t v60_device::opCMPSTRH(uint8_t bFill, uint8_t bStop)
+ 		if (m_lenop1 < m_lenop2)
+ 		{
+ 			for (i = m_lenop1; i < m_lenop2; i++)
+-				m_program->write_word_unaligned(m_op1 + i * 2,(uint16_t)R26);
++				m_tprog.write_word_unaligned(m_op1 + i * 2,(uint16_t)R26);
+ 		}
+ 		else if (m_lenop2 < m_lenop1)
+ 		{
+ 			for (i = m_lenop2; i < m_lenop1; i++)
+-				m_program->write_word_unaligned(m_op2 + i * 2,(uint16_t)R26);
++				m_tprog.write_word_unaligned(m_op2 + i * 2,(uint16_t)R26);
+ 		}
+ 	}
+ 
+@@ -255,8 +255,8 @@ uint32_t v60_device::opCMPSTRH(uint8_t bFill, uint8_t bStop)
+ 
+ 	for (i = 0; i < dest; i++)
+ 	{
+-		c1 = m_program->read_word_unaligned(m_op1 + i * 2);
+-		c2 = m_program->read_word_unaligned(m_op2 + i * 2);
++		c1 = m_tprog.read_word_unaligned(m_op1 + i * 2);
++		c2 = m_tprog.read_word_unaligned(m_op2 + i * 2);
+ 
+ 		if (c1 > c2)
+ 		{
+@@ -309,7 +309,7 @@ uint32_t v60_device::opMOVSTRUB(uint8_t bFill, uint8_t bStop) /* TRUSTED (0, 0)
+ 
+ 	for (i = 0; i < dest; i++)
+ 	{
+-		m_program->write_byte(m_op2 + i,(c1 = m_program->read_byte(m_op1 + i)));
++		m_tprog.write_byte(m_op2 + i,(c1 = m_tprog.read_byte(m_op1 + i)));
+ 
+ 		if (bStop && c1 == (uint8_t)R26)
+ 			break;
+@@ -321,7 +321,7 @@ uint32_t v60_device::opMOVSTRUB(uint8_t bFill, uint8_t bStop) /* TRUSTED (0, 0)
+ 	if (bFill && m_lenop1 < m_lenop2)
+ 	{
+ 		for (;i < m_lenop2; i++)
+-			m_program->write_byte(m_op2 + i,(uint8_t)R26);
++			m_tprog.write_byte(m_op2 + i,(uint8_t)R26);
+ 
+ 		R27 = m_op2 + i;
+ 	}
+@@ -341,7 +341,7 @@ uint32_t v60_device::opMOVSTRDB(uint8_t bFill, uint8_t bStop)
+ 
+ 	for (i = 0; i < dest; i++)
+ 	{
+-		m_program->write_byte(m_op2 + (dest - i - 1),(c1 = m_program->read_byte(m_op1 + (dest - i - 1))));
++		m_tprog.write_byte(m_op2 + (dest - i - 1),(c1 = m_tprog.read_byte(m_op1 + (dest - i - 1))));
+ 
+ 		if (bStop && c1 == (uint8_t)R26)
+ 			break;
+@@ -353,7 +353,7 @@ uint32_t v60_device::opMOVSTRDB(uint8_t bFill, uint8_t bStop)
+ 	if (bFill && m_lenop1 < m_lenop2)
+ 	{
+ 		for (;i < m_lenop2; i++)
+-			m_program->write_byte(m_op2 + dest + (m_lenop2 - i - 1),(uint8_t)R26);
++			m_tprog.write_byte(m_op2 + dest + (m_lenop2 - i - 1),(uint8_t)R26);
+ 
+ 		R27 = m_op2 + (m_lenop2 - i - 1);
+ 	}
+@@ -377,7 +377,7 @@ uint32_t v60_device::opMOVSTRUH(uint8_t bFill, uint8_t bStop) /* TRUSTED (0, 0)
+ 
+ 	for (i = 0; i < dest; i++)
+ 	{
+-		m_program->write_word_unaligned(m_op2 + i * 2,(c1 = m_program->read_word_unaligned(m_op1 + i * 2)));
++		m_tprog.write_word_unaligned(m_op2 + i * 2,(c1 = m_tprog.read_word_unaligned(m_op1 + i * 2)));
+ 
+ 		if (bStop && c1 == (uint16_t)R26)
+ 			break;
+@@ -389,7 +389,7 @@ uint32_t v60_device::opMOVSTRUH(uint8_t bFill, uint8_t bStop) /* TRUSTED (0, 0)
+ 	if (bFill && m_lenop1 < m_lenop2)
+ 	{
+ 		for (;i < m_lenop2; i++)
+-			m_program->write_word_unaligned(m_op2 + i * 2,(uint16_t)R26);
++			m_tprog.write_word_unaligned(m_op2 + i * 2,(uint16_t)R26);
+ 
+ 		R27 = m_op2 + i * 2;
+ 	}
+@@ -414,7 +414,7 @@ uint32_t v60_device::opMOVSTRDH(uint8_t bFill, uint8_t bStop)
+ 
+ 	for (i = 0; i < dest; i++)
+ 	{
+-		m_program->write_word_unaligned(m_op2 + (dest - i - 1) * 2,(c1 = m_program->read_word_unaligned(m_op1 + (dest - i - 1) * 2)));
++		m_tprog.write_word_unaligned(m_op2 + (dest - i - 1) * 2,(c1 = m_tprog.read_word_unaligned(m_op1 + (dest - i - 1) * 2)));
+ 
+ 		if (bStop && c1 == (uint16_t)R26)
+ 			break;
+@@ -426,7 +426,7 @@ uint32_t v60_device::opMOVSTRDH(uint8_t bFill, uint8_t bStop)
+ 	if (bFill && m_lenop1 < m_lenop2)
+ 	{
+ 		for (;i < m_lenop2; i++)
+-			m_program->write_word_unaligned(m_op2 + (m_lenop2 - i - 1) * 2,(uint16_t)R26);
++			m_tprog.write_word_unaligned(m_op2 + (m_lenop2 - i - 1) * 2,(uint16_t)R26);
+ 
+ 		R27 = m_op2 + (m_lenop2 - i - 1) * 2;
+ 	}
+@@ -443,7 +443,7 @@ uint32_t v60_device::opSEARCHUB(uint8_t bSearch)
+ 
+ 	for (i = 0; i < m_lenop1; i++)
+ 	{
+-		appb = (m_program->read_byte(m_op1 + i) == (uint8_t)m_op2);
++		appb = (m_tprog.read_byte(m_op1 + i) == (uint8_t)m_op2);
+ 		if ((bSearch && appb) || (!bSearch && !appb))
+ 			break;
+ 	}
+@@ -469,7 +469,7 @@ uint32_t v60_device::opSEARCHUH(uint8_t bSearch)
+ 
+ 	for (i = 0; i < m_lenop1; i++)
+ 	{
+-		appb = (m_program->read_word_unaligned(m_op1 + i * 2) == (uint16_t)m_op2);
++		appb = (m_tprog.read_word_unaligned(m_op1 + i * 2) == (uint16_t)m_op2);
+ 		if ((bSearch && appb) || (!bSearch && !appb))
+ 			break;
+ 	}
+@@ -494,7 +494,7 @@ uint32_t v60_device::opSEARCHDB(uint8_t bSearch)
+ 
+ 	for (i = m_lenop1; i >= 0; i--)
+ 	{
+-		appb = (m_program->read_byte(m_op1 + i) == (uint8_t)m_op2);
++		appb = (m_tprog.read_byte(m_op1 + i) == (uint8_t)m_op2);
+ 		if ((bSearch && appb) || (!bSearch && !appb))
+ 			break;
+ 	}
+@@ -520,7 +520,7 @@ uint32_t v60_device::opSEARCHDH(uint8_t bSearch)
+ 
+ 	for (i = m_lenop1 - 1; i >= 0; i--)
+ 	{
+-		appb = (m_program->read_word_unaligned(m_op1 + i * 2) == (uint16_t)m_op2);
++		appb = (m_tprog.read_word_unaligned(m_op1 + i * 2) == (uint16_t)m_op2);
+ 		if ((bSearch && appb) || (!bSearch && !appb))
+ 			break;
+ 	}
+@@ -619,7 +619,7 @@ uint32_t v60_device::opSCHBS(uint32_t bSearch1)
+ 
+ 	// Read first uint8_t
+ 	m_op1 += m_bamoffset / 8;
+-	data = m_program->read_byte(m_op1);
++	data = m_tprog.read_byte(m_op1);
+ 	offset = m_bamoffset & 7;
+ 
+ 	// Scan bitstring
+@@ -640,7 +640,7 @@ uint32_t v60_device::opSCHBS(uint32_t bSearch1)
+ 			// Next uint8_t please
+ 			offset = 0;
+ 			m_op1++;
+-			data = m_program->read_byte(m_op1);
++			data = m_tprog.read_byte(m_op1);
+ 		}
+ 	}
+ 
+@@ -665,13 +665,13 @@ uint32_t v60_device::opINSBFR()
+ 	F7CCREATEBITMASK(m_lenop1);
+ 
+ 	m_op2 += m_bamoffset / 8;
+-	appw = m_program->read_dword_unaligned(m_op2);
++	appw = m_tprog.read_dword_unaligned(m_op2);
+ 	m_bamoffset &= 7;
+ 
+ 	appw &= ~(m_lenop1 << m_bamoffset);
+ 	appw |=  (m_lenop1 & m_op1) << m_bamoffset;
+ 
+-	m_program->write_dword_unaligned(m_op2, appw);
++	m_tprog.write_dword_unaligned(m_op2, appw);
+ 
+ 	F7CEND();
+ }
+@@ -686,13 +686,13 @@ uint32_t v60_device::opINSBFL()
+ 	F7CCREATEBITMASK(m_lenop1);
+ 
+ 	m_op2 += m_bamoffset / 8;
+-	appw = m_program->read_dword_unaligned(m_op2);
++	appw = m_tprog.read_dword_unaligned(m_op2);
+ 	m_bamoffset &= 7;
+ 
+ 	appw &= ~(m_lenop1 << m_bamoffset);
+ 	appw |=  (m_lenop1 & m_op1) << m_bamoffset;
+ 
+-	m_program->write_dword_unaligned(m_op2, appw);
++	m_tprog.write_dword_unaligned(m_op2, appw);
+ 
+ 	F7CEND();
+ }
+@@ -716,8 +716,8 @@ uint32_t v60_device::opMOVBSD()
+ 	m_bamoffset1 &= 7;
+ 	m_bamoffset2 &= 7;
+ 
+-	srcdata = m_program->read_byte(m_op1);
+-	dstdata = m_program->read_byte(m_op2);
++	srcdata = m_tprog.read_byte(m_op1);
++	dstdata = m_tprog.read_byte(m_op2);
+ 
+ 	for (i = 0; i < m_lenop1; i++)
+ 	{
+@@ -732,14 +732,14 @@ uint32_t v60_device::opMOVBSD()
+ 		{
+ 			m_bamoffset1 = 8;
+ 			m_op1--;
+-			srcdata = m_program->read_byte(m_op1);
++			srcdata = m_tprog.read_byte(m_op1);
+ 		}
+ 		if (m_bamoffset2 == 0)
+ 		{
+-			m_program->write_byte(m_op2, dstdata);
++			m_tprog.write_byte(m_op2, dstdata);
+ 			m_bamoffset2 = 8;
+ 			m_op2--;
+-			dstdata = m_program->read_byte(m_op2);
++			dstdata = m_tprog.read_byte(m_op2);
+ 		}
+ 
+ 		m_bamoffset1--;
+@@ -748,7 +748,7 @@ uint32_t v60_device::opMOVBSD()
+ 
+ 	// Flush of the final data
+ 	if (m_bamoffset2 != 7)
+-		m_program->write_byte(m_op2, dstdata);
++		m_tprog.write_byte(m_op2, dstdata);
+ 
+ 	F7BEND();
+ }
+@@ -766,8 +766,8 @@ uint32_t v60_device::opMOVBSU()
+ 	m_bamoffset1 &= 7;
+ 	m_bamoffset2 &= 7;
+ 
+-	srcdata = m_program->read_byte(m_op1);
+-	dstdata = m_program->read_byte(m_op2);
++	srcdata = m_tprog.read_byte(m_op1);
++	dstdata = m_tprog.read_byte(m_op2);
+ 
+ 	for (i = 0; i < m_lenop1; i++)
+ 	{
+@@ -784,20 +784,20 @@ uint32_t v60_device::opMOVBSU()
+ 		{
+ 			m_bamoffset1 = 0;
+ 			m_op1++;
+-			srcdata = m_program->read_byte(m_op1);
++			srcdata = m_tprog.read_byte(m_op1);
+ 		}
+ 		if (m_bamoffset2 == 8)
+ 		{
+-			m_program->write_byte(m_op2, dstdata);
++			m_tprog.write_byte(m_op2, dstdata);
+ 			m_bamoffset2 = 0;
+ 			m_op2++;
+-			dstdata = m_program->read_byte(m_op2);
++			dstdata = m_tprog.read_byte(m_op2);
+ 		}
+ 	}
+ 
+ 	// Flush of the final data
+ 	if (m_bamoffset2 != 0)
+-		m_program->write_byte(m_op2, dstdata);
++		m_tprog.write_byte(m_op2, dstdata);
+ 
+ 	F7BEND();
+ }
+diff --git a/src/devices/cpu/v60/v60.cpp b/src/devices/cpu/v60/v60.cpp
+index 0729a24e7a..2724b6aa07 100644
+--- a/src/devices/cpu/v60/v60.cpp
++++ b/src/devices/cpu/v60/v60.cpp
+@@ -343,7 +343,7 @@ uint32_t v60_device::v60_update_psw_for_exception(int is_interrupt, int target_l
+ }
+ 
+ 
+-#define GETINTVECT(nint)                    m_program->read_dword((SBR & ~0xfff) + (nint) * 4)
++#define GETINTVECT(nint)                    m_tprog.read_dword((SBR & ~0xfff) + (nint) * 4)
+ #define EXCEPTION_CODE_AND_SIZE(code, size) (((code) << 16) | (size))
+ 
+ 
+@@ -429,6 +429,35 @@ void v60_device::device_start()
+ 
+ 	m_io = &space(AS_IO);
+ 
++	// attract-mode-cores: lockstep trace
++	m_tprog.d = this; m_tprog.s = m_program; m_tprog.sp = 0;
++	m_tio.d = this; m_tio.s = m_io; m_tio.sp = 1;
++	{
++		// Model 1 RAM and ROM pages (not logged): everything else is a device
++		static const uint8_t ram_pages[][2] = { {0x00, 0x2f}, {0x40, 0x40}, {0x50, 0x53}, {0x60, 0x61}, {0x70, 0x70}, {0x78, 0x7f}, {0x90, 0x91}, {0xf8, 0xff} };
++		for (int i = 0; i < 256; i++) m_dev_page[i] = 1;
++		for (auto &r : ram_pages) for (int i = r[0]; i <= r[1]; i++) m_dev_page[i] = 0;
++		const char *p = getenv("M1TRACE_LOG");
++		if (p && *p)
++		{
++			m_trace = fopen(p, "wb");
++			if (m_trace) fwrite("M1TR\x01\0\0\0", 1, 8, m_trace);
++		}
++		p = getenv("M1TRACE_PCLOG");
++		if (p && *p)
++		{
++			m_pc_log = fopen(p, "w");
++			const char *mx = getenv("M1TRACE_PCLOG_MAX");
++			m_pc_log_max = mx ? strtoull(mx, nullptr, 0) : 200000;
++		}
++		p = getenv("M1TRACE_PCS");
++		if (p && *p)
++		{
++			m_pc_seen_path = p;
++			m_pc_seen.assign((1u << 24) / 64, 0);
++		}
++	}
++
+ 	save_item(NAME(m_reg));
+ 	save_item(NAME(m_irq_line));
+ 	save_item(NAME(m_nmi_line));
+@@ -564,13 +593,18 @@ void v60_device::stall()
+ void v60_device::v60_do_irq(int vector)
+ {
+ 	standard_irq_callback(vector, PC);
++	if (m_trace)
++	{
++		uint32_t b[4] = { uint32_t(m_insn_count), uint32_t(m_insn_count >> 32), uint32_t(vector), PC };
++		trace_rec(0x30, b, sizeof b);
++	}
+ 	uint32_t oldPSW = v60_update_psw_for_exception(1, 0);
+ 
+ 	// Push PC and PSW onto the stack
+ 	SP-=4;
+-	m_program->write_dword_unaligned(SP, oldPSW);
++	m_tprog.write_dword_unaligned(SP, oldPSW);
+ 	SP-=4;
+-	m_program->write_dword_unaligned(SP, PC);
++	m_tprog.write_dword_unaligned(SP, PC);
+ 
+ 	// Jump to vector for user interrupt
+ 	PC = GETINTVECT(vector);
+@@ -624,9 +658,114 @@ void v60_device::execute_run()
+ 		m_PPC = PC;
+ 		debugger_instruction_hook(PC);
+ 		m_icount -= 8;  /* fix me -- this is just an average */
++		m_stalled = false;
++		if (m_trace && m_insn_count == 0 && !m_init_logged)
++		{
++			// the register file MAME starts from (device_start leaves most of it unset)
++			m_init_logged = true;
++			trace_rec(0x02, m_reg, sizeof m_reg);
++		}
+ 		inc = (this->*s_OpCodeTable[OpRead8(PC)])();
+ 		PC += inc;
++		// attract-mode-cores: count completed instructions (a stalled IN repeats)
++		if (!m_stalled)
++		{
++			if (!m_pc_seen.empty())
++				m_pc_seen[(m_PPC & 0xffffff) >> 6] |= uint64_t(1) << (m_PPC & 63);
++			if (m_pc_log && m_insn_count < m_pc_log_max)
++			{
++				uint64_t h = 0xcbf29ce484222325ULL;
++				for (int i = 0; i < 32; i++)
++					h = (h ^ m_reg[i]) * 0x100000001b3ULL;
++				fprintf(m_pc_log, "%llu %08x %08x %016llx\n", (unsigned long long)m_insn_count, m_PPC, v60ReadPSW(), (unsigned long long)h);
++			}
++			m_insn_count++;
++		}
+ 		if (m_irq_line != CLEAR_LINE)
+ 			v60_try_irq();
+ 	}
+ }
++
++
++// attract-mode-cores: lockstep trace (M1TRACE_LOG). Records: u8 type, u32
++// payload bytes, payload. 0x10 write / 0x11 read: u64 count, u32 addr,
++// u32 data, u8 size, u8 space (0 program, 1 I/O). 0x30 interrupt: u64 count,
++// u32 vector, u32 PC. 0x01 sample (after each write to the IRQ control
++// register E00000): u64 count, u32 r0-r31, PC, PSW, then u8 n and per region
++// u32 base, u32 bytes, u64 FNV-1a-64 over its 32-bit words.
++void v60_device::trace_rec(uint8_t type, const void *p, uint32_t n)
++{
++	fwrite(&type, 1, 1, m_trace);
++	fwrite(&n, 4, 1, m_trace);
++	fwrite(p, 1, n, m_trace);
++}
++
++void v60_device::trace_access(int is_write, int sp, offs_t a, u32 v, int size)
++{
++	if (!m_trace || machine().side_effects_disabled())
++		return;
++	a &= 0xffffff;
++	if (sp == 0 && !m_dev_page[a >> 16])
++		return;
++	uint8_t b[18];
++	memcpy(b, &m_insn_count, 8);
++	memcpy(b + 8, &a, 4);
++	memcpy(b + 12, &v, 4);
++	b[16] = uint8_t(size);
++	b[17] = uint8_t(sp);
++	trace_rec(is_write ? 0x10 : 0x11, b, sizeof b);
++	if (is_write && sp == 0 && a == 0xe00000)
++		trace_sample();
++}
++
++void v60_device::trace_sample()
++{
++	static const uint32_t regions[][2] = {
++		{ 0x400000, 0x10000 }, { 0x500000, 0x40000 }, { 0x600000, 0x20000 }, { 0x700000, 0x10000 },
++		{ 0x780000, 0x80000 }, { 0x900000, 0x4000 }, { 0x910000, 0xc000 } };
++	std::vector<uint8_t> b(8 + 34 * 4 + 1 + std::size(regions) * 16);
++	uint8_t *p = b.data();
++	memcpy(p, &m_insn_count, 8); p += 8;
++	memcpy(p, m_reg, 32 * 4); p += 32 * 4;
++	uint32_t pc = PC, psw = v60ReadPSW();
++	memcpy(p, &pc, 4); memcpy(p + 4, &psw, 4); p += 8;
++	*p++ = uint8_t(std::size(regions));
++	auto &mem = *m_program;
++	for (auto &r : regions)
++	{
++		uint64_t h = 0xcbf29ce484222325ULL;
++		for (uint32_t o = 0; o < r[1]; o += 4)
++			h = (h ^ mem.read_dword(r[0] + o)) * 0x100000001b3ULL;
++		memcpy(p, &r[0], 4); memcpy(p + 4, &r[1], 4); memcpy(p + 8, &h, 8); p += 16;
++	}
++	trace_rec(0x01, b.data(), uint32_t(b.size()));
++}
++
++void v60_device::device_stop()
++{
++	if (m_trace)
++	{
++		uint32_t b[2] = { uint32_t(m_insn_count), uint32_t(m_insn_count >> 32) };
++		trace_rec(0x7f, b, sizeof b);
++		fclose(m_trace);
++		m_trace = nullptr;
++	}
++	if (m_pc_log)
++	{
++		fclose(m_pc_log);
++		m_pc_log = nullptr;
++	}
++	if (!m_pc_seen.empty())
++	{
++		// every instruction address executed, one hex address per line
++		FILE *f = fopen(m_pc_seen_path.c_str(), "w");
++		if (f)
++		{
++			for (size_t i = 0; i < m_pc_seen.size(); i++)
++				for (int b = 0; b < 64; b++)
++					if (m_pc_seen[i] >> b & 1)
++						fprintf(f, "%06x\n", unsigned(i * 64 + b));
++			fclose(f);
++		}
++	}
++}
+diff --git a/src/devices/cpu/v60/v60.h b/src/devices/cpu/v60/v60.h
+index 671d4a4e10..07f216e2d7 100644
+--- a/src/devices/cpu/v60/v60.h
++++ b/src/devices/cpu/v60/v60.h
+@@ -5,6 +5,9 @@
+ 
+ #pragma once
+ 
++#include <cstdio>
++#include <vector>
++
+ enum
+ {
+ 	V60_R0 = 1,
+@@ -95,6 +98,7 @@ protected:
+ 	// device-level overrides
+ 	virtual void device_start() override ATTR_COLD;
+ 	virtual void device_reset() override ATTR_COLD;
++	virtual void device_stop() override ATTR_COLD;
+ 
+ 	// device_execute_interface overrides
+ 	virtual uint32_t execute_min_cycles() const noexcept override { return 1; }
+@@ -114,6 +118,42 @@ protected:
+ 	// device_disasm_interface overrides
+ 	virtual std::unique_ptr<util::disasm_interface> create_disassembler() override;
+ 
++private:
++	// attract-mode-cores: lockstep trace (M1TRACE_LOG). Every data access the
++	// V60 makes goes through these wrappers; accesses outside RAM and ROM
++	// (and all I/O space accesses) are logged with the instruction count.
++	struct trace_space
++	{
++		v60_device *d = nullptr;
++		address_space *s = nullptr;
++		int sp = 0;
++		u8  read_byte(offs_t a) { u8 v = s->read_byte(a); d->trace_access(0, sp, a, v, 1); return v; }
++		u16 read_word_unaligned(offs_t a) { u16 v = s->read_word_unaligned(a); d->trace_access(0, sp, a, v, 2); return v; }
++		u32 read_dword(offs_t a) { u32 v = s->read_dword(a); d->trace_access(0, sp, a, v, 4); return v; }
++		u32 read_dword_unaligned(offs_t a) { u32 v = s->read_dword_unaligned(a); d->trace_access(0, sp, a, v, 4); return v; }
++		u64 read_qword_unaligned(offs_t a) { u64 v = s->read_qword_unaligned(a); d->trace_access(0, sp, a, u32(v), 4); d->trace_access(0, sp, a + 4, u32(v >> 32), 4); return v; }
++		void write_byte(offs_t a, u8 v) { s->write_byte(a, v); d->trace_access(1, sp, a, v, 1); }
++		void write_word_unaligned(offs_t a, u16 v) { s->write_word_unaligned(a, v); d->trace_access(1, sp, a, v, 2); }
++		void write_dword_unaligned(offs_t a, u32 v) { s->write_dword_unaligned(a, v); d->trace_access(1, sp, a, v, 4); }
++		void write_qword_unaligned(offs_t a, u64 v) { s->write_qword_unaligned(a, v); d->trace_access(1, sp, a, u32(v), 4); d->trace_access(1, sp, a + 4, u32(v >> 32), 4); }
++	};
++	trace_space m_tprog, m_tio;
++	FILE *m_trace = nullptr;
++	FILE *m_pc_log = nullptr;
++	uint64_t m_pc_log_max = 0;
++	uint64_t m_insn_count = 0;
++	bool m_stalled = false;
++	bool m_init_logged = false;
++	uint8_t m_dev_page[256] = {};
++	std::vector<uint64_t> m_pc_seen;
++	std::string m_pc_seen_path;
++	void trace_access(int is_write, int sp, offs_t a, u32 v, int size);
++	void trace_sample();
++	void trace_rec(uint8_t type, const void *p, uint32_t n);
++
++public:
++	uint64_t insn_count() const { return m_insn_count; }
++
+ private:
+ 	typedef uint32_t (v60_device::*am_func)();
+ 	typedef uint32_t (v60_device::*op6_func)(int reg);
+diff --git a/src/mame/sega/model1_v.cpp b/src/mame/sega/model1_v.cpp
+index e386603c38..2b11a8f111 100644
+--- a/src/mame/sega/model1_v.cpp
++++ b/src/mame/sega/model1_v.cpp
+@@ -1787,9 +1787,40 @@ void model1_state::apply_overlay_stencil(bitmap_rgb32 &bitmap, const rectangle &
+ 	}
+ }
+ 
++// attract-mode-cores: frame log (M1TRACE_FRAMES). Per screen update the
++// V60 instruction count and hashes of the screen after the background
++// tilemaps ("bg"), after the 3D below the HUD ("3d") and composed ("scr");
++// M1TRACE_FBDUMP_DIR/M1TRACE_FBDUMP_EVERY dump raw composed frames.
++static FILE *m1_frame_log()
++{
++	static FILE *f = nullptr;
++	static bool tried = false;
++	if (!tried) {
++		tried = true;
++		if (const char *p = getenv("M1TRACE_FRAMES"))
++			f = fopen(p, "w");
++	}
++	return f;
++}
++
++static u64 m1_hash(const bitmap_rgb32 &bitmap, const rectangle &cliprect)
++{
++	u64 h = 0xcbf29ce484222325ULL;
++	for (int y = cliprect.min_y; y <= cliprect.max_y; y++)
++		for (int x = cliprect.min_x; x <= cliprect.max_x; x++) {
++			const u32 px = bitmap.pix(y, x);
++			for (int b = 0; b < 4; b++) { h ^= (px >> (8 * b)) & 0xff; h *= 0x100000001b3ULL; }
++		}
++	return h;
++}
++
+ uint32_t model1_state::screen_update_model1(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect)
+ {
+ 	model1_state::view_t *view = m_view.get();
++	FILE *flog = m1_frame_log();
++	if (flog)
++		fprintf(flog, "su %u %llu %d %d %d %d\n", unsigned(screen.frame_number()), (unsigned long long)m_maincpu->insn_count(),
++				cliprect.min_x, cliprect.max_x, cliprect.min_y, cliprect.max_y);
+ #if 0
+ 	{
+ 		bool mod = false;
+@@ -1853,10 +1884,14 @@ uint32_t model1_state::screen_update_model1(screen_device &screen, bitmap_rgb32
+ 	m_tiles->draw(screen, bitmap, cliprect, 4, 0, TILEMAP_DRAW_OPAQUE);
+ 	m_tiles->draw(screen, bitmap, cliprect, 2, 0, 0);
+ 	m_tiles->draw(screen, bitmap, cliprect, 0, 0, 0);
++	if (flog)
++		fprintf(flog, "bg %016llx\n", (unsigned long long)m1_hash(bitmap, cliprect));
+ 
+ 	// 3D objects (0x01) and direct polys (0x02) render below the HUD tilemaps,
+ 	// sharing the per-viewport z-sort.
+ 	tgp_render(bitmap, cliprect, RENDER_BELOW_HUD);
++	if (flog)
++		fprintf(flog, "3d %016llx\n", (unsigned long long)m1_hash(bitmap, cliprect));
+ 
+ 	// HUD tilemaps (cat1): cockpit struts, grid lines, radar screen background.
+ 	m_tiles->draw(screen, bitmap, cliprect, 7, 0, 0);
+@@ -1871,6 +1906,21 @@ uint32_t model1_state::screen_update_model1(screen_device &screen, bitmap_rgb32
+ 	tgp_render(bitmap, cliprect, RENDER_ABOVE_HUD);
+ 	apply_overlay_stencil(bitmap, cliprect);
+ 
++	if (flog) {
++		fprintf(flog, "scr %016llx\n", (unsigned long long)m1_hash(bitmap, cliprect));
++		static int every = getenv("M1TRACE_FBDUMP_EVERY") ? atoi(getenv("M1TRACE_FBDUMP_EVERY")) : 0;
++		static const char *dir = getenv("M1TRACE_FBDUMP_DIR");
++		const unsigned fr = unsigned(screen.frame_number());
++		if (dir && every > 0 && fr % every == 0) {
++			char path[512];
++			snprintf(path, sizeof path, "%s/mame_scr_%05u.rgb", dir, fr);
++			if (FILE *d = fopen(path, "wb")) {
++				for (int y = cliprect.min_y; y <= cliprect.max_y; y++)
++					fwrite(&bitmap.pix(y, cliprect.min_x), 4, cliprect.max_x - cliprect.min_x + 1, d);
++				fclose(d);
++			}
++		}
++	}
+ 	return 0;
+ }
+ 
+@@ -1879,6 +1929,8 @@ void model1_state::screen_vblank_model1(int state)
+ 	// on rising edge
+ 	if (state)
+ 	{
++		if (FILE *flog = m1_frame_log())
++			fprintf(flog, "vb %u %llu\n", unsigned(m_screen->frame_number()), (unsigned long long)m_maincpu->insn_count());
+ 		tgp_scan();
+ 		end_frame();
+ 		LOGMASKED(LOG_TGP, "TGP: vsync\n");

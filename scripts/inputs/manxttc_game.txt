@@ -1,0 +1,14 @@
+# Manx TT (manxttc): one credit from a blank EEPROM. Test mode in and out
+# (past the DX motion seat check, as manxttc_attract.txt), two coins, start
+# through the selections, full throttle with no lean, then the game ends.
+frames 9000
+650-655 test=1
+750-755 test=1
+3100-3105 coin=1
+3150-3155 coin=1
+3200-3205 start=1
+3400-3405 start=1
+3600-3605 start=1
+3800-3805 start=1
+4000-4005 start=1
+4100-8000 throttle=255

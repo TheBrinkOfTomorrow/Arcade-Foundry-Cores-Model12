@@ -1,0 +1,5 @@
+# Top Skater's Digital Sound Board 2 68000 (topskatr, mpr-19760): the UART
+# interrupt's states, stored at 0xf0100a (move.l #imm) and reached by jmp (A0).
+# Addresses only (rules.md).
+000144
+00014c

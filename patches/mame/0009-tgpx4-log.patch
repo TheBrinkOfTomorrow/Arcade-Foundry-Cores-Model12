@@ -1,0 +1,92 @@
+diff --git a/src/devices/cpu/mb86235/mb86235ops.cpp b/src/devices/cpu/mb86235/mb86235ops.cpp
+index cbc308b1c9..50e488aad2 100644
+--- a/src/devices/cpu/mb86235/mb86235ops.cpp
++++ b/src/devices/cpu/mb86235/mb86235ops.cpp
+@@ -13,6 +13,8 @@
+ 
+ #include "corefloat.h"
+ 
++FILE *m2_tgp_log(); // model2.cpp: the M2TRACE_TGPLOG log (Model 2C)
++
+ /*********************
+  *
+  * Misc helpers
+@@ -791,6 +793,8 @@ inline uint32_t mb86235_device::get_transfer_reg(uint8_t which)
+ 				case 1: // FI
+ 				{
+ 					uint32_t res = m_fifoin->pop();
++					if (!m_core->cur_fifo_state.has_stalled)
++						if (FILE *f = m2_tgp_log()) fprintf(f, "in %x\n", res);
+ 					if (m_core->cur_fifo_state.has_stalled == true)
+ 					{
+ 						if((m_core->st & RP) == 0)
+@@ -860,7 +864,10 @@ inline void mb86235_device::set_transfer_reg(uint8_t which, uint32_t value)
+ 				case 2: // FO0
+ 				case 3: // FO1 (same FIFO output buffer but sets the 33rd bit; not used by Model 2)
+ 					if(m_fifoout)
++					{
++						if (FILE *f = m2_tgp_log()) fprintf(f, "out %x\n", value);
+ 						m_fifoout->push(u32(value));
++					}
+ 					break;
+ 				case 4: m_core->pdr = value; break;
+ 				case 5: m_core->ddr = value; break;
+diff --git a/src/mame/sega/model2.cpp b/src/mame/sega/model2.cpp
+index 8bb9d950cd..50c2f07e78 100644
+--- a/src/mame/sega/model2.cpp
++++ b/src/mame/sega/model2.cpp
+@@ -109,6 +109,8 @@
+ // i960 DMAs into the SHARC (host boot) up to now, at its first FIFO read
+ // after the upload; "in"/"out" as above; "mr A V"/"mw A V" buffer RAM
+ // (A = word offset); "cr A V" copro_data reads (A = word offset).
++// Model 2C (TGPx4): "xup N w0 ..." the 32-bit halves the i960 uploads
++// into program RAM, at the boot; "in"/"out", "mr"/"mw" and "cr" as on 2B.
+ FILE *m2_geo_log()
+ {
+ 	static FILE *f = nullptr;
+@@ -121,7 +123,7 @@ FILE *m2_geo_log()
+ 	return f;
+ }
+ 
+-static FILE *m2_tgp_log()
++FILE *m2_tgp_log() // also mb86235ops.cpp's (Model 2C)
+ {
+ 	static FILE *f = nullptr;
+ 	static bool tried = false;
+@@ -779,6 +781,12 @@ void model2c_state::copro_halt()
+ 
+ void model2c_state::copro_boot()
+ {
++	if (FILE *f = m2_tgp_log()) {
++		fprintf(f, "xup %u", m_coprocnt);
++		for (u32 i = 0; i < m_coprocnt; i++)
++			fprintf(f, " %x", u32(m_copro_tgpx4_program[i / 2] >> (i & 1 ? 32 : 0)));
++		fprintf(f, "\n");
++	}
+ 	m_copro_tgpx4->set_input_line(INPUT_LINE_HALT, CLEAR_LINE);
+ }
+ 
+@@ -826,8 +834,21 @@ void model2c_state::copro_tgpx4_map(address_map &map)
+ 
+ void model2c_state::copro_tgpx4_data_map(address_map &map)
+ {
+-	map(0x00400000, 0x00407fff).ram().share("bufferram").mirror(0x003f8000);
+-	map(0x00800000, 0x009fffff).rom().region("copro_data",0); // ROM data
++	map(0x00400000, 0x00407fff).mirror(0x003f8000).lrw32(
++		NAME([this](offs_t offset) -> u32 {
++			const u32 v = m_bufferram[offset & 0x7fff];
++			if (FILE *f = m2_tgp_log()) fprintf(f, "mr %x %x\n", offset & 0x7fff, v);
++			return v;
++		}),
++		NAME([this](offs_t offset, u32 data, u32 mem_mask) {
++			if (FILE *f = m2_tgp_log()) fprintf(f, "mw %x %x\n", offset & 0x7fff, data);
++			COMBINE_DATA(&m_bufferram[offset & 0x7fff]);
++		}));
++	map(0x00800000, 0x009fffff).lr32(NAME([this](offs_t offset) -> u32 { // ROM data
++		const u32 v = m_copro_data->as_u32(offset & (m_copro_data->bytes() / 4 - 1));
++		if (FILE *f = m2_tgp_log()) fprintf(f, "cr %x %x\n", offset, v);
++		return v;
++	}));
+ }
+ 
+ 

@@ -1,0 +1,28 @@
+# Virtua Racing's sound 68000 (vr, epr-14870a): the indirect targets MAME's
+# sound CPU log reached (jsr/jmp through registers and a PC-relative table),
+# found by m1sndcheck over the scripted race, and by the core stopping at them
+# in the test menus. Addresses only (rules.md).
+0004a2
+0004c6
+0004e6
+0004fe
+000588
+0009f6
+000a00
+000a5e
+000eca
+000ed6
+000f22
+000f2e
+0013ea
+001426
+001464
+001476
+00149a
+0014c0
+0014e8
+001512
+00151a
+001534
+00153a
+001560

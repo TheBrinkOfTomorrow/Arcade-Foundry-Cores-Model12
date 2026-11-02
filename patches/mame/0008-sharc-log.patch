@@ -1,0 +1,91 @@
+diff --git a/src/mame/sega/model2.cpp b/src/mame/sega/model2.cpp
+--- a/src/mame/sega/model2.cpp
++++ b/src/mame/sega/model2.cpp
+@@ -105,6 +105,10 @@
+ //   mr A V          TGP read banked external memory (A = io offset)
+ //   mw A V M        TGP wrote banked external memory (M = mem_mask)
+ //   vb N            vblank N (the geometrizer parses buffer RAM)
++// Model 2B (SHARC) uses the same log: "sup N w0 ..." the 16-bit words the
++// i960 DMAs into the SHARC (host boot) up to now, at its first FIFO read
++// after the upload; "in"/"out" as above; "mr A V"/"mw A V" buffer RAM
++// (A = word offset); "cr A V" copro_data reads (A = word offset).
+ FILE *m2_geo_log()
+ {
+ 	static FILE *f = nullptr;
+@@ -689,20 +693,44 @@
+ 
+ u32 model2b_state::copro_sharc_buffer_r(offs_t offset)
+ {
+-	return m_bufferram[offset & 0x7fff];
++	const u32 v = m_bufferram[offset & 0x7fff];
++	if (FILE *f = m2_tgp_log()) fprintf(f, "mr %x %x\n", offset & 0x7fff, v);
++	return v;
+ }
+ 
+ void model2b_state::copro_sharc_buffer_w(offs_t offset, u32 data)
+ {
++	if (FILE *f = m2_tgp_log()) fprintf(f, "mw %x %x\n", offset & 0x7fff, data);
+ 	m_bufferram[offset & 0x7fff] = data;
+ }
+ 
+ void model2b_state::copro_sharc_map(address_map &map)
+ {
+-	map(0x0400000, 0x0bfffff).r(m_copro_fifo_in, FUNC(generic_fifo_u32_device::read));
+-	map(0x0c00000, 0x13fffff).w(m_copro_fifo_out, FUNC(generic_fifo_u32_device::write));
++	map(0x0400000, 0x0bfffff).lr32(NAME([this]() -> u32 {
++		if (FILE *f = m2_tgp_log()) {
++			if (!m_sharc_upload.empty()) {
++				fprintf(f, "sup %u", unsigned(m_sharc_upload.size()));
++				for (u16 w : m_sharc_upload) fprintf(f, " %x", w);
++				fprintf(f, "\n");
++				m_sharc_upload.clear();
++			}
++		}
++		const bool empty = m_copro_fifo_in->is_empty();
++		const u32 v = m_copro_fifo_in->read();
++		if (!empty)
++			if (FILE *f = m2_tgp_log()) fprintf(f, "in %x\n", v);
++		return v;
++	}));
++	map(0x0c00000, 0x13fffff).lw32(NAME([this](u32 data) {
++		if (FILE *f = m2_tgp_log()) fprintf(f, "out %x\n", data);
++		m_copro_fifo_out->write(data);
++	}));
+ 	map(0x1400000, 0x1bfffff).rw(FUNC(model2b_state::copro_sharc_buffer_r), FUNC(model2b_state::copro_sharc_buffer_w));
+-	map(0x1c00000, 0x1dfffff).rom().region("copro_data", 0);
++	map(0x1c00000, 0x1dfffff).lr32(NAME([this](offs_t offset) -> u32 {
++		const u32 v = m_copro_data->as_u32(offset & (m_copro_data->bytes() / 4 - 1));
++		if (FILE *f = m2_tgp_log()) fprintf(f, "cr %x %x\n", offset, v);
++		return v;
++	}));
+ }
+ 
+ void model2b_state::copro_halt()
+@@ -723,6 +751,7 @@
+ {
+ 	if (m_coproctl & 0x80000000)
+ 	{
++		m_sharc_upload.push_back(u16(data));
+ 		m_copro_adsp->external_dma_write(m_coprocnt, data & 0xffff);
+ 		m_coprocnt++;
+ 	}
+@@ -2908,7 +2937,7 @@
+ 	ADSP21062(config, m_copro_adsp, 32_MHz_XTAL);
+ 	m_copro_adsp->set_boot_mode(adsp21062_device::BOOT_MODE_HOST);
+ 	m_copro_adsp->set_addrmap(AS_DATA, &model2b_state::copro_sharc_map);
+-	m_copro_adsp->enable_recompiler();
++	//m_copro_adsp->enable_recompiler(); // daytona-arcade-recomp: the interpreter, whose semantics the recompiler takes
+ 
+ 	//ADSP21062(config, m_dsp2, 40000000);
+ 	//m_dsp2->set_boot_mode(adsp21062_device::BOOT_MODE_HOST);
+diff --git a/src/mame/sega/model2.h b/src/mame/sega/model2.h
+--- a/src/mame/sega/model2.h
++++ b/src/mame/sega/model2.h
+@@ -552,6 +552,7 @@
+ 	virtual void machine_reset() override ATTR_COLD;
+ 
+ 	required_device<adsp21062_device> m_copro_adsp;
++	std::vector<u16> m_sharc_upload; // daytona-arcade-recomp: the host boot words, for the TGP log
+ 
+ 	void copro_function_port_w(offs_t offset, u32 data);
+ 	u32 copro_fifo_r();

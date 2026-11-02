@@ -1,0 +1,19 @@
+--- a/src/mame/sega/model2.cpp
++++ b/src/mame/sega/model2.cpp
+@@ -104,6 +104,7 @@
+ //   bank V          TGP wrote its bank register
+ //   mr A V          TGP read banked external memory (A = io offset)
+ //   mw A V M        TGP wrote banked external memory (M = mem_mask)
++//   vb N            vblank N (the geometrizer parses buffer RAM)
+ FILE *m2_geo_log()
+ {
+ 	static FILE *f = nullptr;
+@@ -2479,6 +2480,8 @@
+ 	// daytona-arcade-recomp: geometrizer log (M2TRACE_GEOLOG, model2_v.cpp)
+ 	if (FILE *f = m2_geo_log())
+ 		fprintf(f, "vb %u %llu %d\n", unsigned(m_framenum), (unsigned long long)m_maincpu->insn_count(), parse ? 1 : 0);
++	if (FILE *f = m2_tgp_log()) // where the TGP is when the geometrizer starts
++		fprintf(f, "vb %u\n", unsigned(m_framenum));
+ 	if (parse)
+ 		geo_parse();
+ 

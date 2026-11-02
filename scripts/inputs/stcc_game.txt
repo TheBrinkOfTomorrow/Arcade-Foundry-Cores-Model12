@@ -1,0 +1,14 @@
+# Sega Touring Car Championship: one game. Three coins, start through the
+# menus (it boots after about 900 frames of ROM checks) with the wheel
+# centred, then full throttle with no steering until the race ends and
+# attract comes back.
+frames 15000
+1200-1205 coin=1
+1250-1255 coin=1
+1300-1305 coin=1
+1400-1405 start=1
+1600-1605 start=1
+1800-1805 start=1
+2000-2005 start=1
+2200-2205 start=1
+2400-10500 accel=255

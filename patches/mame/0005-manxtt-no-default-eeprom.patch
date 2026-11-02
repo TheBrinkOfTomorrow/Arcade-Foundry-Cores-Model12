@@ -1,0 +1,20 @@
+--- a/src/mame/sega/model2.cpp
++++ b/src/mame/sega/model2.cpp
+@@ -3914,8 +3914,6 @@
+ 	ROM_REGION( 0x20000, "cpu4", 0) // Communication program
+ 	ROM_LOAD16_WORD_SWAP( "epr-18643a.7", 0x000000, 0x020000, CRC(b5e048ec) SHA1(8182e05a2ffebd590a936c1359c81e60caa79c2a) )
+ 
+-	ROM_REGION16_LE( 0x0000080, "eeprom", 0 ) // default EEPROM
+-	ROM_LOAD( "manxtt_dx_nvran", 0x000000, 0x000080, CRC(b22787a3) SHA1(a0f65e4e1a22c7f0848bbf583e5849d1f7f2adc3) ) // Default
+ 
+ 	MODEL2_CPU_BOARD
+ 	MODEL2A_VID_BOARD
+@@ -3970,8 +3968,6 @@
+ 	ROM_LOAD16_WORD_SWAP( "epr-18643.7",  0x000000, 0x020000, CRC(7166fca7) SHA1(f5d02906b64bb2fd1af8e3772c1b01a4e006c060) )
+ //  ROM_LOAD16_WORD_SWAP( "epr-18643a.7", 0x000000, 0x020000, CRC(b5e048ec) SHA1(8182e05a2ffebd590a936c1359c81e60caa79c2a) ) /* COMM boards found with either revision */
+ 
+-	ROM_REGION16_LE( 0x0000080, "eeprom", 0 ) // default EEPROM
+-	ROM_LOAD( "manxttc_twin_nvran", 0x000000, 0x000080, CRC(f3be38fe) SHA1(5d639800c8bdf8ba6c31ed9a711e4b307233d48b) ) // Set to Twin mode
+ 
+ 	MODEL2_CPU_BOARD
+ 	MODEL2A_VID_BOARD

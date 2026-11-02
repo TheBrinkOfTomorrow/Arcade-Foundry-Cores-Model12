@@ -1,0 +1,26 @@
+# Over Rev: a game played until time runs out: coins, start, the
+# accelerator tapped to confirm course, car and gear (it confirms on a press,
+# so holding it does not), full throttle with light steering, then the
+# results, name entry (start presses) and game over, back to attract.
+# Pedal values are MAME's field values (the port reads them reversed).
+frames 24000
+1000-1005 coin=1
+1050-1055 coin=1
+1100-1105 coin=1
+1200-1205 start=1
+1400-1405 start=1
+1600-1605 start=1
+1800-1805 start=1
+2000-2005 start=1
+2200-2230 accel=255
+2600-2630 accel=255
+3000-3030 accel=255
+3400-3430 accel=255
+3500-16000 accel=255
+3500-16000 steer=0x70
+16500-16505 start=1
+17000-17005 start=1
+17500-17505 start=1
+18000-18005 start=1
+18500-18505 start=1
+19000-19005 start=1
