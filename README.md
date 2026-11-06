@@ -6,7 +6,8 @@ Sega Model 2 arcade games rebuilt as native code, one core per game, for the
 program it uploads are statically recompiled to portable C++, and the
 fixed-function hardware (geometrizer, rasterizer, tilemaps, sound board) is
 native C++. No interpreter, no emulation core. MAME is used only as a test
-oracle. See `docs/daytona-usa-recomp-design.md`.
+oracle. See [docs/design/MODEL2.md](docs/design/MODEL2.md) and
+[docs/design/MODEL1.md](docs/design/MODEL1.md).
 
 Games: Daytona USA (`daytona93`, `daytona`) and Sega Rally Championship
 (`srallyc`). Manx TT Superbike is next.
@@ -23,14 +24,13 @@ A, 1994), `srallyc` (Sega Rally Championship, Revision C).
 
 | Platform | Status | Details |
 | --- | --- | --- |
-| Windows, macOS, Linux | The main build; setup below | [docs/getting-started.md](docs/getting-started.md) |
-| Android | Works (arm64), with on-screen touch controls or a Bluetooth or USB controller; tested on a device | [platform/mobile](platform/mobile/README.md) |
-| iOS | Works on iPhone, installed through Xcode or AltStore, with touch controls or a controller; tested on a device | [platform/mobile](platform/mobile/README.md) |
-| PS Vita | Works: a native Vita app (SDL2); with vitaGL about 57.3 frames/s (the arcade runs 57.52) at CPU 444 / GPU 166 MHz, no overclocking plugin; tested on a Vita | [platform/vita](platform/vita/README.md), release build: [HOW_TO_COMPILE_RELEASE.md](HOW_TO_COMPILE_RELEASE.md) |
-| Dreamcast | Runs in the Flycast emulator with sound and the controller, about 32 frames/s (the arcade runs 57.52); not yet on a console; in progress | [platform/dreamcast](platform/dreamcast/README.md) |
+| Windows, macOS, Linux | The standalone desktop build; setup below | [docs/getting-started.md](docs/getting-started.md) |
+| macOS, iOS, iPadOS, tvOS, Linux (including Raspberry Pi) | The game cores inside Arcade Foundry: Insert Coin | [the app's repository](https://github.com/TheBrinkOfTomorrow/Arcade-Foundry-Insert-Coin) |
 
-Every port starts from the desktop setup: the game code is generated on a
-desktop computer from your ROM set, then built for the other platform.
+The earlier Android, iOS (SDL), PS Vita and Dreamcast ports of the standalone
+build are archived on the `ports-archive` branch, as they were when they were
+last worked on; the Arcade Foundry: Insert Coin app covers iOS now. The branch
+is kept for reference and is not built or tested.
 
 ## Setup
 
@@ -88,7 +88,8 @@ per CPU thread, lower it if the build runs out of memory), `--list-roms`
 checks `roms/daytona93.zip` and `roms/daytona.zip` against them if they are
 there; builds nothing, needs only Python: `python3 scripts/setup.py
 --list-roms`), `--msvc` (setup.ps1 only: Microsoft's compiler), `--test-extras`
-(optional test dependencies), `--with-mame` (MAME source for the oracle
+(optional test dependencies; on Linux and macOS the Python ones go in the
+shared venv `~/venvs/afic`, see Cores-Common's `tools/afic-venv`), `--with-mame` (MAME source for the oracle
 test), `--build-mame` (the patched MAME that records validation traces;
 Linux and macOS).
 
@@ -100,9 +101,7 @@ instruction count once per basic block instead of per instruction, direct
 chaining between the generated files, and the TGP's instruction count once
 per basic block. It loses precision (interrupts come a few instructions later
 than in MAME, so MAME lockstep and trace comparisons need the default output)
-but runs faster, above all on the PS Vita (`scripts/build_vita.py
---fast-inaccuracy` makes the Vita's own code that way, see
-[platform/vita/README.md](platform/vita/README.md)). Revision A is `build-daytona/daytona`, with its own
+but runs faster on slow machines. Revision A is `build-daytona/daytona`, with its own
 settings and saves. Its factory settings are a linked twin cabinet, which
 waits for a second cabinet: set a single cabinet once in test mode (F2).
 

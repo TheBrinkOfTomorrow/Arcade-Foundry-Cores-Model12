@@ -1,8 +1,8 @@
 // v60::Interp: the hooks that run MAME's own operand decoders and
 // addressing modes at run time, so v60::Core's op handlers execute exactly
 // as MAME's V60 does. This is the reference interpreter: the trace harness
-// (m1replay) and the recompiler's unit tests use it. It is never linked into
-// a game build (design doc: no fallback interpreter).
+// (m1replay) and the recompiler's unit tests use it, and the game runs code
+// the recompiler did not reach through it (Board::FallbackEnv).
 #pragma once
 
 #include "v60/core.h"

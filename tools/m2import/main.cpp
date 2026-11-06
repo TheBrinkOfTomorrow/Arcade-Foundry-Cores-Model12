@@ -11,7 +11,7 @@
 // Output is game data: OUTDIR must be git-ignored (build/ is).
 
 #include "runtime/rom_import.h"
-#include "runtime/zip.h"
+#include "afcommon/zip.h"
 
 #include <cstdio>
 #include <filesystem>

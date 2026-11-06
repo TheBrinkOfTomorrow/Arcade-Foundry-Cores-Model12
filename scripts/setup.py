@@ -26,9 +26,10 @@ Options:
   --list-roms    list every file each ROM set must contain (name, size, CRC32),
                  and check roms/<set>.zip against it if it is there; builds
                  nothing.
-  --test-extras  pip packages and modules for the optional tests (lupa for the
-                 Lua plugin tests, pypcode + the Ghidra i960 module for the
-                 second decode oracle).
+  --test-extras  Python packages and modules for the optional tests (lupa for
+                 the Lua plugin tests, pypcode + the Ghidra i960 module for the
+                 second decode oracle). Linux and macOS: the packages go in the
+                 shared venv ~/venvs/afic (common/tools/afic-venv/setup.sh).
   --with-mame    MAME source at its pinned commit, patched (the disassembler
                  oracle test; needed before --build-mame).
   --build-mame   build the patched, Model-2-only MAME that records the traces
@@ -169,7 +170,7 @@ def cached(build, key):
 
 def configure_and_build(build, romset="daytona93", jobs=None):
     say("Configuring and building" + ("" if romset == "daytona93" else f" ({romset})"))
-    cmd = ["cmake", "-S", ".", "-B", build, "-DCMAKE_BUILD_TYPE=Release", "-DM2_ROMSET=" + romset]
+    cmd = ["cmake", "-S", ".", "-B", build, "-DCMAKE_BUILD_TYPE=Release", "-DM2_ROMSET=" + romset, "-DM2_APP=ON"]
     want = {}  # cache entries that must match, or the build directory is reconfigured
     if WINDOWS and not (shutil.which("cl") and shutil.which("ninja")):
         # Visual Studio generator: finds the compiler without a developer prompt.
@@ -209,7 +210,7 @@ def configure_and_build(build, romset="daytona93", jobs=None):
     if not os.path.exists(os.path.join(build, "CMakeCache.txt")):
         run(cmd)
     else:
-        run(["cmake", "-S", ".", "-B", build, "-DM2_ROMSET=" + romset])
+        run(["cmake", "-S", ".", "-B", build, "-DM2_ROMSET=" + romset, "-DM2_APP=ON"])
     run(["cmake", "--build", build, "--config", "Release", "--parallel"] + ([str(jobs)] if jobs else []))
 
 
@@ -244,7 +245,7 @@ def archive_entries(romset):
         return None
     try:
         with zipfile.ZipFile(path) as z:
-            # by file name, ignoring folders, as the importer reads them (src/runtime/zip.cpp)
+            # by file name, ignoring folders, as the importer reads them (common/src/zip.cpp)
             return {i.filename.rsplit("/", 1)[-1]: (i.file_size, i.CRC) for i in z.infolist() if not i.is_dir()}
     except zipfile.BadZipFile:
         return {}
@@ -306,6 +307,10 @@ def main():
     check_toolchain()
     os.makedirs(EXTERN, exist_ok=True)
 
+    if not os.path.exists(os.path.join(ROOT, "common", "CMakeLists.txt")):
+        say("Fetching the shared code (submodule common/: Arcade-Foundry-Cores-Common)")
+        run(["git", "submodule", "update", "--init", "common"])
+
     say("Fetching SoftFloat 3e (extF80 reference for i960 FP)")
     fetch(*SOFTFLOAT, "softfloat")
 
@@ -324,7 +329,12 @@ def main():
 
     if args.test_extras:
         say("Optional test extras")
-        run([sys.executable, "-m", "pip", "install", "--user", "lupa", "pypcode"], check=False)
+        if WINDOWS:
+            run([sys.executable, "-m", "pip", "install", "--user", "lupa", "pypcode"], check=False)
+        else:
+            # the one shared venv (AFIC_VENV, default ~/venvs/afic), never the
+            # system's Python; CMake finds it on its own in a new build folder
+            run(["sh", os.path.join(ROOT, "common", "tools", "afic-venv", "setup.sh")], check=False)
         fetch(*GHIDRA_I960, "ghidra_i960")
 
     if args.with_mame or args.build_mame:

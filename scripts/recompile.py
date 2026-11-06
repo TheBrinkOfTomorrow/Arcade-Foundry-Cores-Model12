@@ -2,7 +2,7 @@
 """Recompile the game's i960 code, its TGP program and the sound board's 68000
 program to native C++ and build them. Same steps on Linux, macOS and Windows.
 
-  recompile.py [--set daytona93|daytona|srallyc|manxttc|vcop2|vcop|vf2|indy500|fvipers|sgt24h|overrevb|stcc|von|hotdo|gunblade|vstriker|zerogun|pltkids|motoraid|dynamcop|skytargt|desert|lastbrnx|schamp|dynabb97|waverunr|segawski|skisuprg|bel|topskatr|rchase2|doab|vr] [--build-dir build] [--config Release] [--jobs N] [--fast_inaccuracy]
+  recompile.py [--set SET] [--build-dir build] [--config Release] [--jobs N] [--fast_inaccuracy]
 
 Needs the user's ROM set at roms/<set>.zip or roms/<set>.7z (git-ignored):
 daytona93 (Daytona USA Deluxe '93, the default) or daytona (Revision A,
@@ -26,7 +26,7 @@ derived from it (images, generated C++) goes under the build directory,
 which is git-ignored: never commit it.
 
 --fast_inaccuracy turns on every recompiler speed option
-for slow targets, above all the PS Vita:
+for slow targets:
   i960 (tools/m2recomp/main.cpp)
   1. the lockstep bookkeeping (interrupt and event checks, instruction count)
      once per basic block instead of before every instruction: no longer
@@ -46,6 +46,8 @@ import os
 import subprocess
 import sys
 
+from game_sets import M2_SETS, MODEL1_SETS, MODEL2A_ONLY_SETS, MODEL2B_SETS, MODEL2C_SETS, OTHER_NAMES
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -55,14 +57,15 @@ ROM_REJECTED_EXIT = 3
 
 # Sets on the Model 2A-CRX board (CMake's M2_BOARD model2a) and on Model
 # 2B-CRX (model2b: the same board with a SHARC for the TGP).
-MODEL2B_SETS = ("indy500", "fvipers", "sgt24h", "overrevb", "von", "gunblade", "vstriker", "zerogun", "pltkids", "lastbrnx", "schamp", "dynabb97", "rchase2", "doab")
-MODEL2C_SETS = ("stcc", "hotdo", "waverunr", "segawski", "skisuprg", "bel", "topskatr")  # 2C-CRX (model2c: a TGPx4 for the SHARC)
+# 2B-CRX (model2b: the same board with a SHARC for the TGP) and 2C-CRX (model2c:
+# a TGPx4 for the SHARC). The set lists come from games.toml (scripts/game_sets.py).
 DSB_SETS = ("stcc",)  # with the Digital Sound Board
 DSB2_SETS = ("topskatr",)  # with the Digital Sound Board 2 (a 68000)
 M1SND_SETS = {"manxttc": "manxtt"}  # with a Model 1 sound board (its ROMs from the named set beside it)
-# MAME parents whose archives may hold a clone's whole set (hotd.7z with hotdo's files, doa.zip with doab's).
-PARENTS = {"hotdo": ("hotd",), "doab": ("doa",)}  # doa.zip: older romsets hold Revision B under the parent's name
-MODEL2A_SETS = ("srallyc", "manxttc", "vcop2", "vf2", "motoraid", "dynamcop", "skytargt") + MODEL2B_SETS + MODEL2C_SETS
+# MAME parents whose archives may hold a clone's whole set (hotd.7z with hotdo's files, doa.zip with doab's:
+# older romsets hold Revision B under the parent's name).
+PARENTS = OTHER_NAMES
+MODEL2A_SETS = MODEL2A_ONLY_SETS + MODEL2B_SETS + MODEL2C_SETS
 # The i960 code those sets run from RAM copies of program ROM (source, RAM
 # address, bytes): the recompiler reads that code from the ROM.
 CODE_COPY = {"srallyc": [("0x1000", "0x5a0000", "0x60000")],
@@ -109,8 +112,7 @@ def tool(build, config, name):
     sys.exit(f"recompile: {name} was not built in {build}")
 
 
-# Model 1 sets (cmake/model1.cmake): their own pipeline, model1()
-MODEL1_SETS = ("vr", "swa", "vf", "wingwar")
+# Model 1 sets (cmake/model1.cmake): their own pipeline, model1(); MODEL1_SETS from games.toml
 M1_DSB_SETS = ("swa",)  # sets with the Digital Sound Board
 M1_IO2_SETS = ("wingwar",)  # sets with the model1io2 I/O board (its own Z80 BIOS)
 
@@ -159,17 +161,17 @@ def model1(args, build, roms):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--set", default="daytona93", choices=["daytona93", "daytona", "srallyc", "manxttc", "vcop2", "vcop", "vf2", "indy500", "fvipers", "sgt24h", "overrevb", "stcc", "von", "hotdo", "gunblade", "vstriker", "zerogun", "pltkids", "motoraid", "dynamcop", "skytargt", "desert", "lastbrnx", "schamp", "dynabb97", "waverunr", "segawski", "skisuprg", "bel", "topskatr", "rchase2", "doab", *MODEL1_SETS])
+    ap.add_argument("--set", default="daytona93", choices=[*M2_SETS, *MODEL1_SETS])
     ap.add_argument("--build-dir", default="build")
     ap.add_argument("--config", default="Release")
     ap.add_argument("--jobs", "-j", type=int, default=os.cpu_count() or 1, metavar="N",
                     help="files compiled at once (default: one per CPU thread)")
     ap.add_argument("--fast_inaccuracy", action="store_true",
-                    help="recompiler speed options (i960 block bookkeeping and direct chunk chaining, TGP block counting): faster (PS Vita), "
+                    help="recompiler speed options (i960 block bookkeeping and direct chunk chaining, TGP block counting): faster, "
                          "not interrupt-exact against MAME")
     ap.add_argument("--rom", metavar="PATH", help="the ROM set (.zip or .7z) if not at roms/<set>.zip")
     ap.add_argument("--core", action="store_true",
-                    help="build only the game core library (m2core, include/afcore.h) instead of the game and tools")
+                    help="build only the game core library (m2core, common/include/afcore.h) instead of the game and tools")
     ap.add_argument("--gen-only", action="store_true",
                     help="stop once the game's code is generated into the build's gen/ (for a core cross-built "
                          "from it with -DM2_GEN_ROOT, such as an arm64 Linux one built on x86-64)")
@@ -188,7 +190,7 @@ def main():
     build_cmd = ["cmake", "--build", build, "--config", args.config]
     # the build directory is for one ROM set (CMake's M2_ROMSET)
     run(["cmake", "-S", ".", "-B", build, "-DCMAKE_BUILD_TYPE=" + args.config, "-DM2_ROMSET=" + args.set,
-         "-DM2_CORE=" + ("ON" if args.core else "OFF")] + (["-DM2_APP=OFF"] if args.gen_only else []))
+         "-DM2_CORE=" + ("ON" if args.core else "OFF"), "-DM2_APP=" + ("OFF" if args.gen_only else "ON")])
     samples = "samples.bin" if args.set in MODEL2A_SETS else "pcm1.bin"  # SCSP or MultiPCM sound board
     # Manx TT: its Model 1 sound board's ROMs are read from the parent set beside the ROM set
     m1_new = args.set in M1SND_SETS and not os.path.exists(os.path.join(cache, "m1_program.bin")) and any(

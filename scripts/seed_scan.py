@@ -2,7 +2,7 @@
 """Find i960 entry points the MAME harvest never reached, by static analysis
 of the user's ROM set, and list them as seeds.
 
-  seed_scan.py [--set daytona93|daytona|srallyc|manxttc|vcop2|vcop|vf2|indy500|fvipers|sgt24h|overrevb|stcc|von|hotdo|gunblade|vstriker|zerogun|pltkids|motoraid|dynamcop|skytargt|desert|lastbrnx|schamp|dynabb97|waverunr|segawski|skisuprg|bel|topskatr|rchase2|doab] [--build-dir build] [--config Release] [--append]
+  seed_scan.py [--set SET] [--build-dir build] [--config Release] [--append]
 
 The game calls code it has only as a pointer: state machines store the next
 state's address (lda 0x2266f8,r5; st r5,0xc(r3)), jump tables are indexed
@@ -38,6 +38,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import recompile  # noqa: E402  (MODEL2A_SETS, CODE_COPY)
+from game_sets import M2_SETS  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RET = 0x0A000000
@@ -59,7 +60,7 @@ def words(data):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--set", default="daytona93", choices=["daytona93", "daytona", "srallyc", "manxttc", "vcop2", "vcop", "vf2", "indy500", "fvipers", "sgt24h", "overrevb", "stcc", "von", "hotdo", "gunblade", "vstriker", "zerogun", "pltkids", "motoraid", "dynamcop", "skytargt", "desert", "lastbrnx", "schamp", "dynabb97", "waverunr", "segawski", "skisuprg", "bel", "topskatr", "rchase2", "doab"])
+    ap.add_argument("--set", default="daytona93", choices=M2_SETS)
     ap.add_argument("--build-dir", default="build")
     ap.add_argument("--config", default="Release")
     ap.add_argument("--append", action="store_true", help="add the new seeds to seeds/<set>.txt")

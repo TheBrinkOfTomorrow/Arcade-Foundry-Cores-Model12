@@ -1,7 +1,7 @@
 #include "runtime/rom_import.h"
 
-#include "runtime/archive.h"
-#include "runtime/zip.h"
+#include "afcommon/archive.h"
+#include "afcommon/zip.h"
 
 #include <cstdio>
 #include <cstring>
@@ -9,6 +9,11 @@
 #include <span>
 
 namespace rt {
+
+using afc::crc32;
+using afc::Archive;
+using afc::open_archive;
+using afc::ZipError;
 
 namespace {
 

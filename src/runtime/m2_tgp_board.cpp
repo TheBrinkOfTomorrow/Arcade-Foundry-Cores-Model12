@@ -13,6 +13,7 @@
 // copro_fifo_w, copro_boot, copro_tgpx4_data_map and machine_start's FIFOs,
 // around the recompiled TGPx4. See THIRD_PARTY.md.
 
+#include "af_debug.h"
 #include "runtime/m2_tgp_board.h"
 
 #include <cstdio>
@@ -414,7 +415,7 @@ void TgpBoardModel::measured_mismatch(uint32_t addr, uint32_t ours, uint32_t mam
     char b[96];
     std::snprintf(b, sizeof b, "%08x: ours %08x, MAME %08x (TGP at %llu instructions)", addr, ours, mame,
                   (unsigned long long)b_.tgp_instructions());
-    static FILE *log = std::getenv("M2NATIVE_MISMATCH_LOG") ? std::fopen(std::getenv("M2NATIVE_MISMATCH_LOG"), "w") : nullptr;
+    static FILE *log = af_debug_env("M2NATIVE_MISMATCH_LOG") ? std::fopen(af_debug_env("M2NATIVE_MISMATCH_LOG"), "w") : nullptr;
     if (log) std::fprintf(log, "%s\n", b);
     if (buffer_ram(addr)) {
         if (!buffer_mismatch++) first_buffer_mismatch = b;

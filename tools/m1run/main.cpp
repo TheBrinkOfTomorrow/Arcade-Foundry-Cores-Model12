@@ -228,6 +228,9 @@ int main(int argc, char **argv) {
         }
         std::printf("m1run: %" PRIu64 " frames in %.2f s (%.0f fps), last screen hash %016" PRIx64 "\n", frames, s,
                     double(frames) / s, m1::Video::hash(board.screen()));
+        if (board.interpreted())
+            std::printf("m1run: fallback interpreter ran %" PRIu64 " V60 instructions, entered at %zu addresses\n",
+                        board.interpreted(), board.fallback_entries());
         if (compared) {
             std::printf("m1run: %" PRIu64 " of %" PRIu64 " screens identical to MAME's", same, compared);
             if (first_diff != UINT64_MAX) std::printf("; first differs at frame %" PRIu64 ", last identical %" PRIu64, first_diff, last_same);

@@ -1,8 +1,9 @@
 // Each game's core version, x.y.z (afcore_api.core_version; what the
-// numbers mean is in include/afcore.h). Bump a game's line in the same
-// commit as the change to its core.
+// numbers mean is in common/include/afcore.h). Bump a game's core_version in
+// games.toml (then scripts/gen_games.py) in the same commit as the change to its core.
 #pragma once
 
+// GAMES:BEGIN versions (scripts/gen_games.py writes these from games.toml)
 #define AFCORE_CORE_VERSION_daytona93 AFCORE_MAKE_VERSION(1, 2, 1)
 #define AFCORE_CORE_VERSION_daytona AFCORE_MAKE_VERSION(1, 2, 2)
 #define AFCORE_CORE_VERSION_srallyc AFCORE_MAKE_VERSION(1, 2, 0)
@@ -39,6 +40,7 @@
 #define AFCORE_CORE_VERSION_swa AFCORE_MAKE_VERSION(1, 1, 0)
 #define AFCORE_CORE_VERSION_vf AFCORE_MAKE_VERSION(1, 1, 0)
 #define AFCORE_CORE_VERSION_wingwar AFCORE_MAKE_VERSION(1, 1, 0)
+// GAMES:END versions
 
 #define AFCORE_CORE_VERSION_(set) AFCORE_CORE_VERSION_##set
 #define AFCORE_CORE_VERSION(set) AFCORE_CORE_VERSION_(set)

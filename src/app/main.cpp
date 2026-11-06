@@ -31,9 +31,6 @@
 #include "backends/imgui_impl_sdl3.h"
 #include "backends/imgui_impl_sdlgpu3.h"
 #include "imgui.h"
-#ifdef M2_MOBILE
-#include "app/touch_overlay.h"
-#endif
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -220,11 +217,6 @@ int main(int argc, char **argv) {
 
     // the name graphics overlays and drivers see (patches/sdl3: Vulkan's application name)
     SDL_SetAppMetadata(rt::kGameTitle, nullptr, "daytona-recomp");
-#ifdef M2_MOBILE
-    // Mobile shells are landscape-only and always occupy the display.
-    SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
-    cfg.fullscreen = true;
-#endif
     if (!cfg.gpu.empty()) SDL_SetHint(SDL_HINT_GPU_DRIVER, cfg.gpu.c_str());
     if (cfg.legacy_logitech_wheels) { // before the joysticks start: SDL reads it when it finds the devices
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_LG4FF, "0");
@@ -266,15 +258,7 @@ int main(int argc, char **argv) {
     ImGui::CreateContext();
     ImGui::GetIO().IniFilename = nullptr;
     ImGui::StyleColorsDark();
-#ifdef SDL_PLATFORM_IOS
-    // UIKit reports logical points; the SDL backend handles Retina framebuffer
-    // scaling. Applying the display scale here again makes controls oversized.
-    ImGui::GetStyle().FontSizeBase = 17.0f;
-    ImGui::GetStyle().FramePadding = ImVec2(8, 6);
-    ImGui::GetStyle().ScrollbarSize = 20.0f;
-#else
     ImGui::GetStyle().ScaleAllSizes(SDL_GetWindowDisplayScale(window));
-#endif
     ImGui_ImplSDL3_InitForSDLGPU(window);
     ImGui_ImplSDLGPU3_InitInfo ii;
     ii.Device = dev;
@@ -403,52 +387,10 @@ int main(int argc, char **argv) {
     app::Pacer pacer;
     pacer.set(app::Pacing{}, SDL_GetTicksNS());
     rt::TestHold test_hold; // the launcher's "Hold Test button"
-#ifdef M2_MOBILE
-    // Preserve startup detection for a controller paired before launching.
-    int pad_count = 0;
-    SDL_JoystickID *pads = SDL_GetGamepads(&pad_count);
-    if (pads && pad_count > 0) devices.pad = SDL_OpenGamepad(pads[0]);
-    SDL_free(pads);
-#endif
 
-#ifdef M2_MOBILE
-    app::TouchControls touch;
-    SDL_Rect touch_area{};
-    int touch_width = 0, touch_height = 0;
-#endif
     while (running) {
-#ifdef M2_MOBILE
-        int tw = 0, th = 0;
-        SDL_GetWindowSize(window, &tw, &th);
-        SDL_Rect area{0, 0, tw, th};
-        SDL_GetWindowSafeArea(window, &area);
-        if (tw != touch_width || th != touch_height || area.x != touch_area.x || area.y != touch_area.y ||
-            area.w != touch_area.w || area.h != touch_area.h) {
-            touch.layout(float(area.x), float(area.y), float(area.w), float(area.h));
-            touch_area = area; touch_width = tw; touch_height = th;
-        }
-        if (in_launcher) touch.clear();
-#endif
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
-#ifdef M2_MOBILE
-            if (e.type == SDL_EVENT_WINDOW_FOCUS_LOST || e.type == SDL_EVENT_WILL_ENTER_BACKGROUND) {
-                touch.clear();
-                in_launcher = true;
-            }
-            if (!in_launcher && (e.type == SDL_EVENT_FINGER_DOWN || e.type == SDL_EVENT_FINGER_MOTION ||
-                e.type == SDL_EVENT_FINGER_UP || e.type == SDL_EVENT_FINGER_CANCELED)) {
-                const float tx = e.tfinger.x * touch_width, ty = e.tfinger.y * touch_height;
-                if (e.type == SDL_EVENT_FINGER_DOWN)
-                    in_launcher = touch.down(e.tfinger.touchID, e.tfinger.fingerID, tx, ty);
-                else if (e.type == SDL_EVENT_FINGER_MOTION)
-                    touch.move(e.tfinger.touchID, e.tfinger.fingerID, tx, ty);
-                else if (e.type == SDL_EVENT_FINGER_UP)
-                    touch.up(e.tfinger.touchID, e.tfinger.fingerID);
-                else if (e.type == SDL_EVENT_FINGER_CANCELED)
-                    touch.cancel(e.tfinger.touchID, e.tfinger.fingerID);
-            }
-#endif
             devices.handle_event(e);
             if (e.type == SDL_EVENT_QUIT) running = false;
             else if (e.type == SDL_EVENT_KEY_DOWN && e.key.scancode == SDL_SCANCODE_F11) {
@@ -463,14 +405,9 @@ int main(int argc, char **argv) {
             }
         }
 
-#ifdef M2_MOBILE
-        if (in_launcher) touch.clear();
-        cfg.controls.touch = touch.values;
-        cfg.controls.touch_steering = touch.steering;
-#endif
         // The mouse cursor: hidden while the game plays if the launcher says so,
         // shown whenever the launcher is open. ImGui sets the cursor on every
-        // frame it draws (mobile draws its touch controls in play), so it is
+        // frame it draws, so it is
         // told to leave the cursor alone while hidden.
         if (const bool hide = cfg.hide_cursor && game && !in_launcher; hide != cursor_hidden) {
             hide ? SDL_HideCursor() : SDL_ShowCursor();
@@ -541,11 +478,6 @@ int main(int argc, char **argv) {
                 if (cfg.hold_test != test_hold.armed()) cfg.hold_test ? test_hold.arm() : test_hold.cancel();
                 if (test_hold.apply(game->frames(), inputs.in0)) cfg.hold_test = false; // held: the box clears
                 game->run_frame(inputs);
-#ifdef M2_MOBILE
-                touch.consumed();
-                cfg.controls.touch = touch.values;
-                cfg.controls.touch_steering = touch.steering;
-#endif
                 if (native_active) {
                     const auto bytes = game->board().take_sound_bytes();
                     if (!native_audio.send(bytes.data(), bytes.size())) {
@@ -631,11 +563,7 @@ int main(int argc, char **argv) {
         }
 
         ImDrawData *draw = nullptr;
-        if (in_launcher
-#ifdef M2_MOBILE
-            || game != nullptr
-#endif
-        ) {
+        if (in_launcher) {
             ImGui_ImplSDLGPU3_NewFrame();
             ImGui_ImplSDL3_NewFrame();
             ImGui::NewFrame();
@@ -648,9 +576,6 @@ int main(int argc, char **argv) {
             case app::Launcher::Quit: running = false; break;
             default: break;
             }
-#ifdef M2_MOBILE
-            else app::draw_touch_controls(touch);
-#endif
             sync_native_audio();
             ImGui::Render();
             draw = ImGui::GetDrawData();

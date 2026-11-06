@@ -26,8 +26,9 @@ inline uint32_t cc_u(uint32_t a, uint32_t b) { return a < b ? 4u : a == b ? 2u :
 inline uint32_t cc_s(int32_t a, int32_t b) { return a < b ? 4u : a == b ? 2u : 1u; }
 inline uint32_t cc_d(double a, double b) { return a < b ? 4u : a == b ? 2u : a > b ? 1u : 0u; }
 
-// FP with MAME's host-double semantics (lockstep against MAME). The shipped
-// path will use the proven native paths in i960/fp.h instead.
+// FP with MAME's host-double semantics (lockstep against MAME). This is the
+// shipped path too: a faster one may replace it only with a unit test that
+// proves bit-identical results (rules.md).
 inline double round_to_int(double v, uint32_t ac) {
     switch ((ac >> 30) & 3) {
     case 0: return std::round(v);

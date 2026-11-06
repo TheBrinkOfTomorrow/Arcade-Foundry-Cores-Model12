@@ -1,8 +1,8 @@
-// TEST ORACLE ONLY. Never linked into the game.
-//
 // MAME's i960 instruction interpreter (BSD-3-Clause, transplanted; see
 // i960_ref.cpp) over the runtime's Cpu context. m2replay uses it to check the
-// runtime and the device replay against MAME without the recompiler.
+// runtime and the device replay against MAME without the recompiler; the
+// game's GameLoop uses it as the fallback for code with no recompiled
+// version (M2_STRICT=1 turns the fallback off).
 #pragma once
 
 #include "runtime/cpu.h"

@@ -5,23 +5,13 @@ project(daytona_recomp LANGUAGES C CXX)
 if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
-# M2_CORE: also build the game as a library (m2core, include/afcore.h). Its
+# M2_CORE: also build the game as a library (m2core, common/include/afcore.h). Its
 # static dependencies are then position-independent.
 option(M2_CORE "Build the game core library (C interface)" OFF)
 # M1_CORE: the same for a Model 1 game (cmake/model1.cmake).
 option(M1_CORE "Build the Model 1 game core library (C interface)" OFF)
 if(M2_CORE OR M1_CORE)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-endif()
-if(IOS)
-    enable_language(OBJCXX)
-endif()
-
-# Mobile frontends use the same runtime/app code as desktop. Android needs
-# SDL's shared JNI library; iOS uses the static library in an app bundle.
-set(M2_MOBILE OFF)
-if(ANDROID OR IOS)
-    set(M2_MOBILE ON)
 endif()
 set(M2_GEN_ROOT "${CMAKE_BINARY_DIR}/gen" CACHE PATH
     "Directory containing recompiled daytona93/daytona93_tgp/daytona93_snd sources")
@@ -109,21 +99,17 @@ target_include_directories(trace PUBLIC src)
 
 # Runtime the recompiled game runs on: i960 context and services (call/ret,
 # interrupts, memory; MAME's semantics, transplanted, BSD-3), replay bus and
-# lockstep. No instruction interpreter.
-# The ROM set the game is recompiled from: daytona93 (Daytona USA Deluxe '93,
-# the default), daytona (Revision A, 1994) or srallyc (Sega Rally
-# Championship, Revision C), manxttc (Manx TT Superbike, Revision C, Twin) or
-# vcop2 (Virtua Cop 2), vcop (Virtua Cop, Revision B), vf2 (Virtua Fighter
-# 2, Version 2.1), indy500 (INDY 500 Twin, Revision A, Newer), fvipers
-# (Fighting Vipers, Revision D), sgt24h (Super GT 24h) or overrevb (Over Rev,
-# Model 2B, Revision B) or stcc (Sega Touring Car Championship, Model 2C) or von (Cyber Troopers
-# Virtual-On, Twin, Export, Model 2B) or hotdo (The House of the Dead, Model 2C) or gunblade (Gunblade NY, Revision A, Model 2B) or vstriker (Virtua Striker,
-# Revision A, Model 2B) or zerogun (Zero Gunner, Export, Model 2B) or pltkids (Pilot Kids, Revision A, Model 2B) or motoraid (Motor Raid, Twin, Model 2A) or dynamcop (Dynamite Cop, Export, Model 2A) or skytargt (Sky Target, Model 2A) or desert (Desert Tank, Model 2) or lastbrnx (Last Bronx, Export, Revision A, Model 2B) or schamp (Sonic Championship, USA, Model 2B) or dynabb97 (Dynamite Baseball 97, Revision A, Model 2B) or waverunr (Wave Runner, Japan, Revision A, Model 2C) or segawski (Sega Water Ski, Japan, Revision A, Model 2C) or skisuprg (Sega Ski Super G, Model 2C) or bel (Behind Enemy Lines, Model 2C) or topskatr (Top Skater, Model 2C) or rchase2 (Rail Chase 2, Model 2B) or doab (Dead or Alive (Revision B, Model 2B)). One set per build
-# directory: its generated code, seeds and saves are its own.
-set(M2_ROMSET daytona93 CACHE STRING "MAME ROM set to recompile: daytona93, daytona, srallyc, manxttc, vcop2, vcop, vf2, indy500, fvipers, sgt24h, overrevb, stcc, von, hotdo, gunblade, vstriker, zerogun, pltkids, motoraid, dynamcop, skytargt, desert, lastbrnx, schamp, dynabb97, waverunr, segawski, skisuprg, bel, topskatr, rchase2 or doab")
-set_property(CACHE M2_ROMSET PROPERTY STRINGS daytona93 daytona srallyc manxttc vcop2 vcop vf2 indy500 fvipers sgt24h overrevb stcc von hotdo gunblade vstriker zerogun pltkids motoraid dynamcop skytargt desert lastbrnx schamp dynabb97 waverunr segawski skisuprg bel topskatr rchase2 doab)
-if(NOT M2_ROMSET MATCHES "^(daytona93|daytona|srallyc|manxttc|vcop2|vcop|vf2|indy500|fvipers|sgt24h|overrevb|stcc|von|hotdo|gunblade|vstriker|zerogun|pltkids|motoraid|dynamcop|skytargt|desert|lastbrnx|schamp|dynabb97|waverunr|segawski|skisuprg|bel|topskatr|rchase2|doab)$")
-    message(FATAL_ERROR "M2_ROMSET must be daytona93, daytona, srallyc, manxttc, vcop2, vcop, vf2, indy500, fvipers, sgt24h, overrevb, stcc, von, hotdo, gunblade, vstriker, zerogun, pltkids, motoraid, dynamcop, skytargt, desert, lastbrnx, schamp, dynabb97, waverunr, segawski, skisuprg, bel, topskatr, rchase2 or doab, not ${M2_ROMSET}")
+# lockstep, and MAME's i960 interpreter (src/refcore) as the fallback for
+# code the recompiler did not reach (GameLoop; M2_STRICT=1 turns it off).
+# The ROM set the game is recompiled from: one of M2_SETS (games.toml, which
+# scripts/gen_games.py writes into cmake/games.cmake), daytona93 by default.
+# One set per build directory: its generated code, seeds and saves are its own.
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/games.cmake)
+string(REPLACE ";" ", " M2_SETS_TEXT "${M2_SETS}")
+set(M2_ROMSET daytona93 CACHE STRING "MAME ROM set to recompile: ${M2_SETS_TEXT}")
+set_property(CACHE M2_ROMSET PROPERTY STRINGS ${M2_SETS})
+if(NOT M2_ROMSET IN_LIST M2_SETS)
+    message(FATAL_ERROR "M2_ROMSET must be one of ${M2_SETS_TEXT} (games.toml), not ${M2_ROMSET}")
 endif()
 # The board the set runs on, as MAME's driver classes name them: model2o (the
 # original Model 2, Daytona) or model2a (Model 2A-CRX, Sega Rally, Manx TT
@@ -135,12 +121,8 @@ endif()
 # too (builds fvipers, sgt24h, overrevb), Virtual-On, Gunblade NY, Virtua Striker, Zero Gunner and Pilot Kids (von, gunblade, vstriker, zerogun, pltkids). Sega Touring Car Championship is on
 # Model 2C-CRX (model2c: Model 2B's board with a TGPx4 for the SHARC), its
 # build named stcc; The House of the Dead too (build hotd).
-if(M2_ROMSET MATCHES "^(srallyc|manxttc|vcop2|vf2|motoraid|dynamcop|skytargt)$")
-    set(M2_BOARD model2a)
-elseif(M2_ROMSET MATCHES "^(indy500|fvipers|sgt24h|overrevb|von|gunblade|vstriker|zerogun|pltkids|lastbrnx|schamp|dynabb97|rchase2|doab)$")
-    set(M2_BOARD model2b)
-elseif(M2_ROMSET MATCHES "^(stcc|hotdo|waverunr|segawski|skisuprg|bel|topskatr)$")
-    set(M2_BOARD model2c)
+if(DEFINED M2_BOARD_${M2_ROMSET})
+    set(M2_BOARD ${M2_BOARD_${M2_ROMSET}})
 else()
     set(M2_BOARD model2o)
 endif()
@@ -165,9 +147,7 @@ add_library(runtime STATIC
     src/runtime/video.cpp
     src/runtime/m2_board.cpp
     src/runtime/game_loop.cpp
-    src/runtime/zip.cpp
     src/runtime/rom_import.cpp
-    src/runtime/archive.cpp
     src/runtime/m2_replay_bus.cpp
     src/runtime/lockstep.cpp
     src/runtime/snd_cpu.cpp
@@ -182,8 +162,10 @@ add_library(runtime STATIC
     src/runtime/enhance.cpp
     src/runtime/comm_board.cpp
     src/runtime/crypt5881/crypt5881.cpp
+    src/refcore/i960_ref.cpp
 )
 target_include_directories(runtime PUBLIC src)
+target_compile_definitions(runtime PUBLIC M2_FALLBACK_INTERP=1)
 # M2_MODEL2A: the Model 2A-CRX family (model2a, model2b and model2c: SCSP
 # sound, the 315-5649 I/O chip); M2_MODEL2B: the SHARC board; M2_MODEL2C:
 # the TGPx4 board.
@@ -221,21 +203,16 @@ else()
 endif()
 target_compile_definitions(runtime PUBLIC M2_ROMSET="${M2_ROMSET}" M2_BOARD="${M2_BOARD}" M2_MODEL2A=${M2_MODEL2A} M2_MODEL2B=${M2_MODEL2B}
     M2_MODEL2C=${M2_MODEL2C} M2_DSB=${M2_DSB} M2_DSB2=${M2_DSB2} M2_M1SND=${M2_M1SND})
-# M2_FAST_PATHS: the ports' exact speed-ups on a desktop build, for slow
-# hosts (Raspberry Pi 4): the Vita's rasterizer and 2D-layer caches
-# (M2_VITA_RENDER_OPT) and the runtime fast paths that need no rewritten
-# code (src/runtime/fast_paths.h), and the 3D drawn on several threads
-# (M2_RASTER_THREADS in the environment sets how many). The same pixels and
-# sound; OFF builds the reference.
-# On by default for arm64 Linux (Raspberry Pi and other boards) and for
-# iPhone, iPad and Apple TV.
-if((CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
-   OR CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "tvOS")
-    set(M2_FAST_PATHS_DEFAULT ON)
-else()
-    set(M2_FAST_PATHS_DEFAULT OFF)
-endif()
-option(M2_FAST_PATHS "Exact rasterizer caches, runtime fast paths and 3D threads (slow hosts)" ${M2_FAST_PATHS_DEFAULT})
+# M2_FAST_PATHS: the ports' exact speed-ups: the Vita's rasterizer and
+# 2D-layer caches (M2_VITA_RENDER_OPT) and the runtime fast paths that need
+# no rewritten code (src/runtime/fast_paths.h), and the 3D drawn on several
+# threads (M2_RASTER_THREADS in the environment sets how many). The same
+# pixels and sound, checked frame by frame against the reference.
+# On by default on every platform since 2026-11-04 (Insert-Coin #288 3d;
+# before that only arm64 Linux, iOS and tvOS). -DM2_FAST_PATHS=OFF builds the
+# reference, for lockstep runs and for checking a fast path against it.
+set(M2_FAST_PATHS_DEFAULT ON)
+option(M2_FAST_PATHS "Exact rasterizer caches, runtime fast paths and 3D threads (OFF: the reference)" ${M2_FAST_PATHS_DEFAULT})
 if(M2_FAST_PATHS)
     target_compile_definitions(runtime PUBLIC M2_VITA_RENDER_OPT=1 M2_FAST_BUS=1 M2_FAST_TGP=1 M2_FAST_GEO=1)
     # The 3D drawn by several threads, each its own rows (src/runtime/raster.cpp).
@@ -257,11 +234,17 @@ if(EXISTS ${LZMA_DIR}/7zArcIn.c)
     if(NOT MSVC)
         target_compile_options(lzma7z PRIVATE -w)
     endif()
-    target_link_libraries(runtime PUBLIC lzma7z)
-    target_compile_definitions(runtime PRIVATE M2_HAVE_7Z)
 else()
     message(STATUS "extern/lzma not found: 7z ROM sets unsupported (run scripts/setup.py)")
 endif()
+# The core interface header and the zip/7z readers, shared with the other
+# core repos (submodule common/, Arcade-Foundry-Cores-Common); it uses
+# lzma7z above when there is one.
+if(NOT EXISTS ${CMAKE_SOURCE_DIR}/common/CMakeLists.txt)
+    message(FATAL_ERROR "common/ is empty: run git submodule update --init")
+endif()
+add_subdirectory(common)
+target_link_libraries(runtime PUBLIC afc::afcommon afc::afcore)
 target_link_libraries(runtime PUBLIC trace i960 dsb)
 
 # YM3438 (the sound board's FM chip): ymfm, BSD-3, fetched by
@@ -277,10 +260,11 @@ if(NOT MSVC)
 endif()
 target_link_libraries(runtime PUBLIC ymfm)
 
-# Reference interpreter (MAME's i960 executor, transplanted, BSD-3). Test
-# oracle only: m2replay links it; the game never does.
-add_library(refcore STATIC src/refcore/i960_ref.cpp)
-target_link_libraries(refcore PUBLIC runtime)
+# Reference interpreter (MAME's i960 executor, transplanted, BSD-3): m2replay's
+# oracle, and the game's fallback for unseeded code. It is built into the
+# runtime; refcore is kept as a name for the tools that link it.
+add_library(refcore INTERFACE)
+target_link_libraries(refcore INTERFACE runtime)
 if(NOT MSVC)
     # Upstream MAME code: keep its own warnings out of ours.
     set_source_files_properties(src/runtime/cpu.cpp src/refcore/i960_ref.cpp src/runtime/geo.cpp src/runtime/crypt5881/crypt5881.cpp PROPERTIES COMPILE_OPTIONS "-Wno-unused-parameter;-Wno-sign-compare;-Wno-unused-but-set-variable;-Wno-attributes")
@@ -306,19 +290,15 @@ target_link_libraries(m2sndrecomp PRIVATE m68k)
 # and the app's own code. Built whenever SDL is there, ROM set or not, so CI
 # compiles all of it; the daytona executable itself also needs the generated
 # game code (below).
-# M2_APP=OFF leaves it out (a core-only build for another platform).
-option(M2_APP "Build the windowed app when SDL is there" ON)
+# Off by default: the game cores (M2_CORE, M1_CORE) for the Arcade Foundry:
+# Insert Coin app are the main product, and the app builds them without SDL.
+# scripts/setup.py and scripts/recompile.py turn it on for the standalone
+# desktop build.
+option(M2_APP "Build the windowed app when SDL is there" OFF)
 if(M2_APP AND EXISTS ${CMAKE_SOURCE_DIR}/extern/sdl3/CMakeLists.txt)
-    if(ANDROID)
-        # SDLActivity loads libSDL3.so before the game's libmain.so.
-        set(M2_SDL_TARGET SDL3::SDL3-shared)
-        set(SDL_SHARED ON CACHE BOOL "" FORCE)
-        set(SDL_STATIC OFF CACHE BOOL "" FORCE)
-    else()
-        set(M2_SDL_TARGET SDL3::SDL3-static)
-        set(SDL_SHARED OFF CACHE BOOL "" FORCE)
-        set(SDL_STATIC ON CACHE BOOL "" FORCE)
-    endif()
+    set(M2_SDL_TARGET SDL3::SDL3-static)
+    set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+    set(SDL_STATIC ON CACHE BOOL "" FORCE)
     if(NOT TARGET ${M2_SDL_TARGET})
         set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
         set(SDL_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -331,11 +311,9 @@ if(M2_APP AND EXISTS ${CMAKE_SOURCE_DIR}/extern/sdl3/CMakeLists.txt)
     endif()
 
     # Dear ImGui (launcher UI), with its SDL3 and SDL_GPU backends
-    if(NOT ANDROID AND NOT IOS)
-        add_executable(test_gpu_startup tests/test_gpu_startup.cpp)
-        target_include_directories(test_gpu_startup PRIVATE src ${CMAKE_SOURCE_DIR}/extern/sdl3/include)
-        add_test(NAME gpu_startup COMMAND test_gpu_startup)
-    endif()
+    add_executable(test_gpu_startup tests/test_gpu_startup.cpp)
+    target_include_directories(test_gpu_startup PRIVATE src ${CMAKE_SOURCE_DIR}/extern/sdl3/include)
+    add_test(NAME gpu_startup COMMAND test_gpu_startup)
     set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/extern/imgui)
     add_library(imgui STATIC
         ${IMGUI_DIR}/imgui.cpp ${IMGUI_DIR}/imgui_draw.cpp ${IMGUI_DIR}/imgui_tables.cpp
@@ -354,14 +332,6 @@ if(M2_APP AND EXISTS ${CMAKE_SOURCE_DIR}/extern/sdl3/CMakeLists.txt)
     target_link_libraries(daytona_app PRIVATE runtime imgui gpurender ${M2_SDL_TARGET})
     if(WIN32)
         target_link_libraries(daytona_app PUBLIC ws2_32) # link play's sockets
-    endif()
-    if(IOS)
-        target_sources(daytona_app PRIVATE platform/mobile/ios/rom_picker.mm)
-        set_source_files_properties(platform/mobile/ios/rom_picker.mm PROPERTIES COMPILE_FLAGS "-fobjc-arc")
-        target_include_directories(daytona_app PRIVATE platform/mobile/ios)
-    endif()
-    if(M2_MOBILE)
-        target_compile_definitions(daytona_app PRIVATE M2_MOBILE=1)
     endif()
 endif()
 
@@ -411,85 +381,67 @@ if(EXISTS ${GEN_DIR}/gen_table.cpp AND EXISTS ${TGP_GEN} AND EXISTS ${SND_GEN} A
 
     # The game in a window (needs the app objects below).
     if(TARGET daytona_app)
-        if(ANDROID)
-            # SDLActivity loads this as libmain.so and calls SDL_main from it.
-            add_library(daytona SHARED $<TARGET_OBJECTS:daytona_app> ${GEN_SOURCES} ${TGP_GEN} ${SND_GEN} ${DSB_GEN})
-            set_target_properties(daytona PROPERTIES OUTPUT_NAME main)
-        elseif(IOS)
-            add_executable(daytona MACOSX_BUNDLE $<TARGET_OBJECTS:daytona_app> ${GEN_SOURCES} ${TGP_GEN} ${SND_GEN} ${DSB_GEN})
-            set_target_properties(daytona PROPERTIES
-                MACOSX_BUNDLE_BUNDLE_NAME "Daytona USA"
-                MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/platform/mobile/ios/Info.plist.in"
-                MACOSX_BUNDLE_GUI_IDENTIFIER "com.boucydesigns.daytona"
-                MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
-                MACOSX_BUNDLE_BUNDLE_VERSION "1"
-                XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.boucydesigns.daytona"
-                XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
-                XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "15.0"
-                XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO")
-        else()
-            add_executable(daytona WIN32 $<TARGET_OBJECTS:daytona_app> ${GEN_SOURCES} ${TGP_GEN} ${SND_GEN} ${DSB_GEN})
-        endif()
+        add_executable(daytona WIN32 $<TARGET_OBJECTS:daytona_app> ${GEN_SOURCES} ${TGP_GEN} ${SND_GEN} ${DSB_GEN})
         target_link_libraries(daytona PRIVATE runtime imgui gpurender ${M2_SDL_TARGET})
-        if(M2_ROMSET STREQUAL "srallyc" AND NOT ANDROID)
+        if(M2_ROMSET STREQUAL "srallyc")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME segarally) # Sega Rally's build
-        elseif(M2_ROMSET STREQUAL "manxttc" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "manxttc")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME manxtt) # Manx TT's build
-        elseif(M2_ROMSET STREQUAL "vcop2" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "vcop2")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME vcop2) # Virtua Cop 2's build
-        elseif(M2_ROMSET STREQUAL "vcop" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "vcop")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME vcop) # Virtua Cop's build
-        elseif(M2_ROMSET STREQUAL "vf2" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "vf2")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME vf2) # Virtua Fighter 2's build
-        elseif(M2_ROMSET STREQUAL "indy500" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "indy500")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME indy500) # INDY 500's build
-        elseif(M2_ROMSET STREQUAL "fvipers" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "fvipers")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME fvipers) # Fighting Vipers' build
-        elseif(M2_ROMSET STREQUAL "sgt24h" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "sgt24h")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME sgt24h) # Super GT 24h's build
-        elseif(M2_ROMSET STREQUAL "overrevb" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "overrevb")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME overrev) # Over Rev's build
-        elseif(M2_ROMSET STREQUAL "stcc" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "stcc")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME stcc) # Sega Touring Car Championship's build
-        elseif(M2_ROMSET STREQUAL "von" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "von")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME von) # Virtual-On's build
-        elseif(M2_ROMSET STREQUAL "hotdo" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "hotdo")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME hotd) # The House of the Dead's build
-        elseif(M2_ROMSET STREQUAL "gunblade" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "gunblade")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME gunblade) # Gunblade NY's build
-        elseif(M2_ROMSET STREQUAL "vstriker" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "vstriker")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME vstriker) # Virtua Striker's build
-        elseif(M2_ROMSET STREQUAL "zerogun" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "zerogun")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME zerogun) # Zero Gunner's build
-        elseif(M2_ROMSET STREQUAL "pltkids" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "pltkids")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME pltkids) # Pilot Kids' build
-        elseif(M2_ROMSET STREQUAL "motoraid" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "motoraid")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME motoraid) # Motor Raid's build
-        elseif(M2_ROMSET STREQUAL "dynamcop" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "dynamcop")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME dynamcop) # Dynamite Cop's build
-        elseif(M2_ROMSET STREQUAL "skytargt" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "skytargt")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME skytargt) # Sky Target's build
-        elseif(M2_ROMSET STREQUAL "desert" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "desert")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME desert) # Desert Tank's build
-        elseif(M2_ROMSET STREQUAL "lastbrnx" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "lastbrnx")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME lastbrnx) # Last Bronx's build
-        elseif(M2_ROMSET STREQUAL "schamp" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "schamp")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME schamp) # Sonic Championship's build
-        elseif(M2_ROMSET STREQUAL "dynabb97" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "dynabb97")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME dynabb97) # Dynamite Baseball 97's build
-        elseif(M2_ROMSET STREQUAL "waverunr" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "waverunr")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME waverunr) # Wave Runner's build
-        elseif(M2_ROMSET STREQUAL "segawski" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "segawski")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME segawski) # Sega Water Ski's build
-        elseif(M2_ROMSET STREQUAL "skisuprg" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "skisuprg")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME skisuprg) # Sega Ski Super G's build
-        elseif(M2_ROMSET STREQUAL "bel" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "bel")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME bel) # Behind Enemy Lines's build
-        elseif(M2_ROMSET STREQUAL "topskatr" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "topskatr")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME topskatr) # Top Skater's build
-        elseif(M2_ROMSET STREQUAL "rchase2" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "rchase2")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME rchase2) # Rail Chase 2's build
-        elseif(M2_ROMSET STREQUAL "doab" AND NOT ANDROID)
+        elseif(M2_ROMSET STREQUAL "doab")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME doab) # Dead or Alive's build
         endif()
         if(WIN32)
@@ -501,12 +453,12 @@ if(EXISTS ${GEN_DIR}/gen_table.cpp AND EXISTS ${TGP_GEN} AND EXISTS ${SND_GEN} A
     else()
         message(STATUS "extern/sdl3 not found: skipping the windowed game (run scripts/setup.py)")
     endif()
-    # The game core as a library with a C interface (include/afcore.h) for
+    # The game core as a library with a C interface (common/include/afcore.h) for
     # other front ends: a shared library (a framework on Apple) that exports
     # only afcore_api_<romset>, so several games share a process.
     if(M2_CORE)
         add_library(m2core SHARED src/core/m2core.cpp src/runtime/stereo.cpp src/app/link_socket.cpp ${GEN_SOURCES} ${TGP_GEN} ${SND_GEN} ${DSB_GEN})
-        target_include_directories(m2core PUBLIC ${CMAKE_SOURCE_DIR}/include)
+        target_include_directories(m2core PUBLIC ${CMAKE_SOURCE_DIR}/common/include)
         target_compile_definitions(m2core PRIVATE AFCORE_BUILD M2_ROMSET_ID=${M2_ROMSET})
         target_link_libraries(m2core PRIVATE runtime)
         set_target_properties(m2core PROPERTIES OUTPUT_NAME afcore_${M2_ROMSET}
@@ -515,7 +467,7 @@ if(EXISTS ${GEN_DIR}/gen_table.cpp AND EXISTS ${TGP_GEN} AND EXISTS ${SND_GEN} A
             set_target_properties(m2core PROPERTIES FRAMEWORK TRUE
                 MACOSX_FRAMEWORK_IDENTIFIER org.arcadefoundry.core.${M2_ROMSET}
                 INSTALL_NAME_DIR @rpath BUILD_WITH_INSTALL_NAME_DIR ON # embedded in an app
-                PUBLIC_HEADER ${CMAKE_SOURCE_DIR}/include/afcore.h)
+                PUBLIC_HEADER ${CMAKE_SOURCE_DIR}/common/include/afcore.h)
             target_link_options(m2core PRIVATE "LINKER:-exported_symbol,_afcore_api_${M2_ROMSET}")
         elseif(WIN32)
             target_link_libraries(m2core PRIVATE ws2_32)
@@ -624,6 +576,10 @@ add_executable(test_app_pacing tests/test_app_pacing.cpp src/app/pacing.cpp)
 target_include_directories(test_app_pacing PRIVATE src)
 add_test(NAME app_pacing COMMAND test_app_pacing)
 
+add_executable(test_audio_ring tests/test_audio_ring.cpp)
+target_include_directories(test_audio_ring PRIVATE src)
+add_test(NAME audio_ring COMMAND test_audio_ring)
+
 add_executable(test_test_hold tests/test_test_hold.cpp)
 target_include_directories(test_test_hold PRIVATE src)
 add_test(NAME test_hold COMMAND test_test_hold)
@@ -656,84 +612,6 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/extern/sdl3/include/SDL3/SDL_audio.h)
     add_test(NAME app_native_audio COMMAND test_app_native_audio)
 endif()
 
-# PS Vita frontend tests: platform/vita code against narrow host mocks of the
-# Vita SDK. ROM-free; they check CPU data and lifetimes, not GXM rendering or
-# device frame rates. Off by default: not part of the desktop build.
-option(M2_VITA_TESTS "Build the PS Vita frontend's host tests" OFF)
-if(M2_VITA_TESTS)
-    add_executable(test_vita_imgui tests/test_vita_imgui.cpp
-        extern/imgui/imgui.cpp extern/imgui/imgui_draw.cpp
-        extern/imgui/imgui_tables.cpp extern/imgui/imgui_widgets.cpp)
-    target_include_directories(test_vita_imgui PRIVATE . tests/vita_gpu_shim extern/imgui)
-    add_test(NAME vita_imgui COMMAND test_vita_imgui)
-    # The same menu through the vitaGL backend (GPU_GL builds), gpu_gl.h mocked.
-    add_executable(test_vita_imgui_gl tests/test_vita_imgui_gl.cpp
-        extern/imgui/imgui.cpp extern/imgui/imgui_draw.cpp
-        extern/imgui/imgui_tables.cpp extern/imgui/imgui_widgets.cpp)
-    target_include_directories(test_vita_imgui_gl PRIVATE . tests/vita_gl_shim tests/vita_gpu_shim src platform/vita extern/imgui)
-    add_test(NAME vita_imgui_gl COMMAND test_vita_imgui_gl)
-    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        add_executable(test_vita_link tests/test_vita_link.cpp src/app/link_socket.cpp src/runtime/comm_board.cpp)
-        target_include_directories(test_vita_link PRIVATE tests/vita_link_shim src)
-        add_test(NAME vita_link COMMAND test_vita_link)
-    endif()
-    add_executable(test_vita_controls tests/test_vita_controls.cpp)
-    add_executable(test_vita_core_policy tests/test_vita_core_policy.cpp)
-    add_test(NAME vita_core_policy COMMAND test_vita_core_policy)
-    add_test(NAME vita_controls COMMAND test_vita_controls)
-    add_executable(test_vita_gpu_memory tests/test_vita_gpu_memory.cpp)
-    target_include_directories(test_vita_gpu_memory PRIVATE tests/vita_gpu_shim platform/vita)
-    add_test(NAME vita_gpu_memory COMMAND test_vita_gpu_memory)
-
-    add_executable(test_vita_gpu_lifetime tests/test_vita_gpu_lifetime.cpp
-        src/runtime/video.cpp src/runtime/raster.cpp)
-    target_include_directories(test_vita_gpu_lifetime PRIVATE tests/vita_gpu_shim src)
-    target_compile_definitions(test_vita_gpu_lifetime PRIVATE M2_VITA_RENDER_OPT=1)
-    add_test(NAME vita_gpu_lifetime COMMAND test_vita_gpu_lifetime)
-
-    add_executable(test_vita_tessellation tests/test_vita_tessellation.cpp)
-    target_include_directories(test_vita_tessellation PRIVATE tests/vita_gpu_shim platform/vita)
-    add_test(NAME vita_tessellation COMMAND test_vita_tessellation)
-
-    add_executable(test_vita_polygon_order tests/test_vita_polygon_order.cpp)
-    target_include_directories(test_vita_polygon_order PRIVATE platform/vita src)
-    add_test(NAME vita_polygon_order COMMAND test_vita_polygon_order)
-
-    # The multicore/vitaGL helpers: texel index, flat index, reference audio pacing.
-    add_executable(test_vita_texel_index tests/test_vita_texel_index.cpp)
-    target_include_directories(test_vita_texel_index PRIVATE src)
-    add_test(NAME vita_texel_index COMMAND test_vita_texel_index)
-    add_executable(test_vita_flat_index tests/test_vita_flat_index.cpp)
-    add_test(NAME vita_flat_index COMMAND test_vita_flat_index)
-    add_executable(test_vita_audio_rate tests/test_vita_audio_rate.cpp)
-    add_test(NAME vita_audio_rate COMMAND test_vita_audio_rate)
-
-    add_executable(test_vita_native_audio tests/test_vita_native_audio.cpp)
-    target_include_directories(test_vita_native_audio PRIVATE tests/vita_audio_shim)
-    target_link_libraries(test_vita_native_audio PRIVATE Threads::Threads)
-    add_test(NAME vita_native_audio COMMAND test_vita_native_audio)
-
-    add_executable(test_vita_sound_worker tests/test_vita_sound_worker.cpp)
-    target_include_directories(test_vita_sound_worker PRIVATE tests/vita_audio_shim)
-    target_link_libraries(test_vita_sound_worker PRIVATE Threads::Threads)
-    add_test(NAME vita_sound_worker COMMAND test_vita_sound_worker)
-
-    add_executable(test_vita_audio_worker tests/test_vita_audio_worker.cpp)
-    target_include_directories(test_vita_audio_worker PRIVATE tests/vita_audio_shim)
-    target_link_libraries(test_vita_audio_worker PRIVATE Threads::Threads)
-    add_test(NAME vita_audio_worker COMMAND test_vita_audio_worker)
-
-    add_executable(test_vita_async_log tests/test_vita_async_log.cpp)
-    target_include_directories(test_vita_async_log PRIVATE tests/vita_log_shim)
-    target_link_libraries(test_vita_async_log PRIVATE Threads::Threads)
-    add_test(NAME vita_async_log COMMAND test_vita_async_log)
-    set_tests_properties(vita_async_log PROPERTIES TIMEOUT 20)
-
-    add_executable(test_vita_log tests/test_vita_log.cpp)
-    target_include_directories(test_vita_log PRIVATE tests/vita_log_shim)
-    add_test(NAME vita_log COMMAND test_vita_log)
-endif()
-
 # Measurement, not a test: where MAME's double FP disagrees with the model.
 add_executable(fp_vs_mame tests/fp_vs_mame.cpp)
 target_link_libraries(fp_vs_mame PRIVATE i960 Threads::Threads)
@@ -747,6 +625,18 @@ target_link_libraries(test_trace PRIVATE trace)
 add_test(NAME trace COMMAND test_trace ${CMAKE_CURRENT_BINARY_DIR})
 
 # The MAME plugin's Lua core against the C++ trace library (needs lupa).
+# Python: the one shared venv (Cores-Common tools/afic-venv: AFIC_VENV,
+# default ~/venvs/afic) when there is one and no Python3_EXECUTABLE is given
+if(NOT Python3_EXECUTABLE)
+  if(DEFINED ENV{AFIC_VENV})
+    set(AFIC_VENV "$ENV{AFIC_VENV}")
+  else()
+    set(AFIC_VENV "$ENV{HOME}/venvs/afic")
+  endif()
+  if(EXISTS "${AFIC_VENV}/bin/python3")
+    set(Python3_EXECUTABLE "${AFIC_VENV}/bin/python3" CACHE FILEPATH "Python (the shared afic venv)")
+  endif()
+endif()
 find_package(Python3 COMPONENTS Interpreter)
 if(Python3_FOUND)
     add_test(NAME lua_core
@@ -758,7 +648,7 @@ if(Python3_FOUND)
                 ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}/lua_plugin_mock)
     set_tests_properties(lua_plugin_mock PROPERTIES SKIP_RETURN_CODE 77)
     # Second decode reference: Ghidra SLEIGH (third-party i960 module via
-    # pypcode). Needs scripts/fetch_ghidra_i960.sh and pip install pypcode.
+    # pypcode). Needs scripts/fetch_ghidra_i960.sh and pypcode (the shared venv).
     if(EXISTS ${CMAKE_SOURCE_DIR}/extern/ghidra_i960/data/languages/i960.slaspec)
         add_test(NAME ghidra_oracle
             COMMAND Python3::Interpreter ${CMAKE_SOURCE_DIR}/tests/ghidra_oracle.py

@@ -1,7 +1,12 @@
+#include "af_debug.h"
 #include "model1/board.h"
+
+#include "v60/interp.h"
 
 #include <algorithm>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 namespace m1 {
 
@@ -9,6 +14,26 @@ void NativeEnv::miss(v60::Core &c) {
     char b[96];
     std::snprintf(b, sizeof b, "V60: no recompiled code at %06x", c.m_reg[32] & 0xffffff);
     throw v60::Fatal(b);
+}
+
+Board::FallbackEnv::FallbackEnv() {
+    if (const char *v = af_debug_env("M2_STRICT")) strict = *v && std::strcmp(v, "0") != 0;
+}
+
+// The same stop conditions as generated code: the limit before each
+// instruction, and a pending interrupt the PSW lets in (run_native's loop
+// test; only UPDPSW, LDPR, RETIU and RETIS can let one in).
+void Board::FallbackEnv::miss(v60::Core &c) {
+    if (strict) return NativeEnv::miss(c);
+    const uint32_t pc = c.m_reg[32] & 0xffffff;
+    if (seen.insert(pc).second)
+        std::fprintf(stderr, "V60: fallback interpreter at %06x (a seed for the next recompile)\n", pc);
+    do {
+        if (count >= limit || (irq_pending && c.interrupts_enabled())) return;
+        v60::Interp::step(c);
+        ++count;
+        ++interpreted;
+    } while (!has_native(c, c.m_reg[32]));
 }
 
 Board::Board(Images img, const RomSet &set)

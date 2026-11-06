@@ -3,8 +3,9 @@
 # CMakeLists.txt; the Model 2 targets are untouched.
 
 # v60: MAME's V60 executor (transplanted, BSD-3, src/v60/mame) as v60::Core,
-# with the reference interpreter. The interpreter is a test oracle only: the
-# recompiled game links v60_core, never v60_interp.
+# with the reference interpreter. The interpreter is the trace harness's
+# oracle and the game's fallback for code the recompiler did not reach
+# (Board::FallbackEnv; M2_STRICT=1 turns it off): m1run and m1core link it.
 add_library(v60_core INTERFACE)
 target_include_directories(v60_core INTERFACE src)
 add_library(v60_interp STATIC src/v60/interp.cpp)
@@ -120,19 +121,16 @@ if(EXISTS ${M1_SND_GEN})
     target_link_libraries(m1sndcheck PRIVATE runtime)
 endif()
 
-# M1_CORE: the game core library (include/afcore.h, src/core/m1core.cpp) for
+# M1_CORE: the game core library (common/include/afcore.h, src/core/m1core.cpp) for
 # M1_ROMSET from the generated code: afcore_<set> (a framework on Apple),
 # exporting only afcore_api_<set>, like the Model 2 games' m2core.
 if(M1_GEN AND M1_NATIVE_TGP AND M1_NATIVE_SOUND)
     # The board free-running, headless (frames, audio, MAME's frame hashes)
     add_executable(m1run tools/m1run/main.cpp src/model1/board.cpp src/app/link_socket.cpp ${M1_GEN})
-    target_link_libraries(m1run PRIVATE model1)
+    target_link_libraries(m1run PRIVATE model1 v60_interp)
 endif()
 
-set(M1_TITLES_vr "Virtua Racing")
-set(M1_TITLES_swa "Star Wars Arcade")
-set(M1_TITLES_vf "Virtua Fighter")
-set(M1_TITLES_wingwar "Wing War")
+# M1_TITLES_<set>: cmake/games.cmake (games.toml)
 # Stereo: metres per game unit, measured from a car's width and a plane's
 # wingspan (the others default to 1).
 set(M1_STEREO_SCALE_vr 0.8f)
@@ -142,10 +140,10 @@ if(M1_CORE)
         message(FATAL_ERROR "M1_CORE: generate the code first (scripts/recompile.py --set ${M1_ROMSET} --core)")
     endif()
     add_library(m1core SHARED src/core/m1core.cpp src/model1/board.cpp src/model1/stereo.cpp src/app/link_socket.cpp ${M1_GEN})
-    target_include_directories(m1core PRIVATE ${CMAKE_SOURCE_DIR}/include)
+    target_include_directories(m1core PRIVATE ${CMAKE_SOURCE_DIR}/common/include)
     target_compile_definitions(m1core PRIVATE AFCORE_BUILD M1_SET_NAME="${M1_ROMSET}" M2_ROMSET_ID=${M1_ROMSET}
         M1_GAME_TITLE="${M1_TITLES_${M1_ROMSET}}")
-    target_link_libraries(m1core PRIVATE model1)
+    target_link_libraries(m1core PRIVATE model1 v60_interp)
     if(DEFINED M1_STEREO_SCALE_${M1_ROMSET})
         target_compile_definitions(m1core PRIVATE M1_STEREO_SCALE=${M1_STEREO_SCALE_${M1_ROMSET}})
     endif()
@@ -155,7 +153,7 @@ if(M1_CORE)
         set_target_properties(m1core PROPERTIES FRAMEWORK TRUE
             MACOSX_FRAMEWORK_IDENTIFIER org.arcadefoundry.core.${M1_ROMSET}
             INSTALL_NAME_DIR @rpath BUILD_WITH_INSTALL_NAME_DIR ON # embedded in an app
-            PUBLIC_HEADER ${CMAKE_SOURCE_DIR}/include/afcore.h)
+            PUBLIC_HEADER ${CMAKE_SOURCE_DIR}/common/include/afcore.h)
         target_link_options(m1core PRIVATE "LINKER:-exported_symbol,_afcore_api_${M1_ROMSET}")
     elseif(NOT WIN32)
         file(WRITE ${CMAKE_BINARY_DIR}/m1core.map "{ global: afcore_api_${M1_ROMSET}; local: *; };\n")
@@ -164,6 +162,6 @@ if(M1_CORE)
     # A headless run of the core through its C interface (frames, audio)
     add_executable(m1coreshot tools/m2coreshot/main.c)
     target_compile_definitions(m1coreshot PRIVATE M2_ROMSET_ID=${M1_ROMSET})
-    target_include_directories(m1coreshot PRIVATE ${CMAKE_SOURCE_DIR}/include)
+    target_include_directories(m1coreshot PRIVATE ${CMAKE_SOURCE_DIR}/common/include)
     target_link_libraries(m1coreshot PRIVATE m1core)
 endif()

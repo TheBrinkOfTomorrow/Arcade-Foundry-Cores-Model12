@@ -16,10 +16,14 @@
 #include "runtime/lockstep.h"
 #include "runtime/m2_board.h"
 #include "runtime/sound_board.h"
+#if M2_FALLBACK_INTERP
+#include "refcore/i960_ref.h"
+#endif
 
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -128,12 +132,26 @@ public:
     uint64_t frames() const { return frames_; }
     uint64_t instructions() const { return ls_->count; }
     int interrupts() const { return ls_->interrupts(); }
+    // Instructions the fallback interpreter ran (code the recompiler did
+    // not reach), and how many addresses it was entered at.
+    uint64_t interpreted() const { return interpreted_; }
+    size_t fallback_entries() const { return fallback_seen_.size(); }
 
 private:
     void probe();
+    void no_code(); // control reached an address with no recompiled code
     FrameProfiler profiler_;
     std::unique_ptr<M2Board> board_;
+#if M2_FALLBACK_INTERP
+    std::unique_ptr<I960Ref> cpu_; // the runtime's Cpu, with MAME's interpreter for the fallback
+#else
     std::unique_ptr<Cpu> cpu_;
+#endif
+    // M2_STRICT=1 in the environment: no fallback, a hard stop naming the
+    // address (lockstep and seed-hunting runs).
+    bool strict_ = false;
+    uint64_t interpreted_ = 0;
+    std::unordered_set<uint32_t> fallback_seen_;
     std::unique_ptr<Lockstep> ls_;
     std::unique_ptr<gen::Env> env_;
     std::unique_ptr<snd::SoundBoard> sound_;

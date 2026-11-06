@@ -224,10 +224,14 @@ int main(int argc, char **argv) {
         }
         if (!save_nvram_dir.empty()) tools::save_nvram(game, save_nvram_dir);
         const double s = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-        std::printf("m2run: %" PRIu64 " frames, %" PRIu64 " i960 instructions (all native), %" PRIu64
+        std::printf("m2run: %" PRIu64 " frames, %" PRIu64 " i960 instructions (%s), %" PRIu64
                     " TGP instructions, %d interrupts, %" PRIu64 " bytes to the sound board; %.2f s (%.0f frames/s)\n",
-                    game.frames(), game.instructions(), game.board().tgp().tgp_instructions(), game.interrupts(),
+                    game.frames(), game.instructions(), game.interpreted() ? "some interpreted" : "all native",
+                    game.board().tgp().tgp_instructions(), game.interrupts(),
                     game.board().sound_bytes_total(), s, double(game.frames()) / s);
+        if (game.interpreted())
+            std::printf("  fallback interpreter: %" PRIu64 " of those i960 instructions, entered at %zu addresses\n",
+                        game.interpreted(), game.fallback_entries());
         std::printf("  last screen hash %016" PRIx64 "\n", game.board().video().screen_hash());
         if (const rt::Geo *g = game.board().geo(); g && g->polys_dropped)
             std::printf("  %" PRIu64 " polygons dropped past the 32768 a frame\n", g->polys_dropped);

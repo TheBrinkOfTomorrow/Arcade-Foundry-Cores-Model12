@@ -1,5 +1,10 @@
 # Daytona USA (Model 2) Static Recompilation — Design Document
 
+> The first design, written for Daytona USA alone and kept as it was, for
+> its measurements and reasoning. The current design of the Model 2 cores
+> is [design/MODEL2.md](design/MODEL2.md), and of the Model 1 cores
+> [design/MODEL1.md](design/MODEL1.md); where they differ, they win.
+
 Sep 24, 2026 · Ben
 
 ## Overview & goals
@@ -82,7 +87,7 @@ The recompiler runs at build time on the user's machine, so no generated Sega co
 
 **Memory bus.** Main RAM, work RAM and shared RAM are flat host arrays accessed inline. MMIO ranges (TGP FIFO, geometrizer, tilemap RAM, palette, I/O dual-port RAM, sound UART, comm RAM) go through a page-table of handlers, resolved at compile time where the address is constant.
 
-**No fallback.** Every instruction the game runs is statically recompiled to native code. There is no interpreter in the shipped build. A jump to an address with no recompiled code is a hard error that names the address; the fix is to add it to `seeds/daytona93.txt` and recompile. The runtime (`src/runtime/cpu`) holds the i960 context and the services generated code calls (call/return with the register cache, interrupt entry, memory); it has no interpreter. The reference interpreter in `src/refcore` exists only for the test harness (`m2replay`) and is never linked into the game (`m2native` does not link it).
+**Fallback interpreter (was: no fallback).** Every instruction the seeds and the recompiler's analysis reach is statically recompiled to native code, and that is the only code the lockstep checks run. The design first had no interpreter in the shipped build: a jump to an address with no recompiled code was a hard error naming the address (fix: add it to the set's seeds and recompile). That held for the lockstep work, but once the games shipped (1.0.0, November 2026) a player reaching a path no recorded run had visited lost the game to a stop screen. Since 2 November 2026 the game falls back to MAME's i960 interpreter (`src/refcore/i960_ref`, the same code `m2replay` holds to MAME) at such an address: `GameLoop` runs it instruction by instruction with the generated code's lockstep bookkeeping (events and interrupts before each instruction, the count after it) until control is back at an address with recompiled code or the frame ends. Each new entry address is logged once to stderr (a seed for the next recompile, rules.md), and `m2run` prints how many instructions were interpreted. `AF_DEBUG_M2_STRICT=1` in the environment restores the hard stop, for lockstep runs and seed hunting; `m2native` (the lockstep harness) never falls back. `M2_FAST_GEN` builds (the PS Vita and Dreamcast ports, archived on branch `ports-archive`) keep the hard stop. Model 1's V60 does the same with `v60::Interp` (`Board::FallbackEnv`, docs/design/MODEL1.md). Checked: Virtua Cop recompiled from a reduced seed list runs the same frames, instruction counts and screens as the full one, with the gap interpreted.
 
 ## i960 static recompiler
 
@@ -95,7 +100,7 @@ The recompiler turns the program ROM into one C++ function per i960 procedure, p
 3. Recursive-descent disassembly over the four formats (REG, COBR, CTRL, MEM). Follow `call`, `callx`, `bal`, `balx`, branches and compare-and-branch.
 4. Resolve indirect targets: pattern-match jump tables (`ld` from a scaled index then `bx`/`callx`), and merge in targets observed by the MAME tracer (see Reference & validation).
 5. Build a CFG per procedure, then emit C++ with one label per basic block and `goto` edges.
-6. Emit a dispatch table (address → function pointer) for all indirect calls; a miss is a hard error naming the address (no fallback).
+6. Emit a dispatch table (address → function pointer) for all indirect calls; a miss runs the fallback interpreter until control is back in recompiled code (a hard error naming the address with `AF_DEBUG_M2_STRICT=1`; see Fallback interpreter above).
 
 **Decoder** (`src/i960`, shared by `i960dis` and the recompiler)
 
@@ -379,15 +384,14 @@ The generated code is plain portable C++20 (no host assembly, no JIT), so the sa
 **Core library (other front ends)**
 
 `-DM2_CORE=ON` also builds the game as a library with a C interface
-(`include/m2core.h`, `src/core/m2core.cpp`): `m2core_<romset>`, a shared
+(`common/include/afcore.h`, `src/core/m2core.cpp`): `afcore_<romset>`, a shared
 library, or a framework on Apple platforms, that exports one symbol,
-`m2core_api_<romset>()`, a table of functions (create from the ROM set or
+`afcore_api_<romset>()`, a table of functions (create from the ROM set or
 an m2import folder, run a frame, the screen, the two sound streams, save,
 link play). Everything else is hidden (exported-symbol list or version
 script), so one process can hold several games, each with its own
-generated code and `rt::` runtime. It is for front ends outside this repo,
-such as a launcher app for several games; the app here stays as it is.
-`m2coreshot` drives it from C.
+generated code and `rt::` runtime. It is what Arcade Foundry: Insert Coin
+loads; the app here stays as it is. `m2coreshot` drives it from C.
 
 **Other runtime features**
 

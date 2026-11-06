@@ -9,6 +9,7 @@
 // protocol was read from the game's own traffic (see IoBoard). See
 // THIRD_PARTY.md.
 
+#include "af_debug.h"
 #include "runtime/m2_board.h"
 
 #include <cstdio>
@@ -448,7 +449,7 @@ uint32_t M2Board::dev_read(uint32_t addr, uint32_t mask) {
     case 0x00980004: {
         const uint32_t v = tgp_.fifo_out_empty() ? 1 : 0;
 #ifndef M2_FAST_BUS // (a desktop debugging print: getenv on every status read)
-        if (std::getenv("M2RUN_VERBOSE")) std::fprintf(stderr, "fifo status read -> %u (frame %llu)\n", v, (unsigned long long)frame_);
+        if (af_debug_env("M2RUN_VERBOSE")) std::fprintf(stderr, "fifo status read -> %u (frame %llu)\n", v, (unsigned long long)frame_);
 #endif
         return v;
     }

@@ -1,8 +1,8 @@
 // i960KB context and runtime services (MAME's semantics, BSD-3-Clause,
 // transplanted; see cpu.cpp). Recompiled game code runs on this: registers,
-// the register cache, call/return, interrupt entry, memory access. There is
-// no instruction interpreter in the runtime; the reference interpreter in
-// src/refcore is a test oracle and is never linked into the game.
+// the register cache, call/return, interrupt entry, memory access. The
+// instruction interpreter is MAME's, in src/refcore (I960Ref, a Cpu): the
+// test oracle, and the game's fallback for code the recompiler did not reach.
 #pragma once
 
 #include <bit>

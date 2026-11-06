@@ -1,4 +1,4 @@
-// What a front end asks stereo for (m2core_stereo, include/m2core.h), for
+// What a front end asks stereo for (afcore_stereo, common/include/afcore.h), for
 // every board's stereo renderer: Model 2's rt::Stereo, Model 1's m1::Stereo.
 #pragma once
 

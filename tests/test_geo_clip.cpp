@@ -13,10 +13,11 @@ int reference_clip(rt::GeoVertex *v, int count, rt::GeoVertex *out, rt::Geo::pla
     bool curin = curdot >= plane.distance;
     for (int i = 0; i < count; ++i, ++cur) {
         const int next = (i + 1) % count;
+        if (n >= 8) break; // at most 8 vertices out, as patches/mame/0010
         if (curin) out[n++] = *cur;
         const float nextdot = rt::dot_product(v[next], plane.normal);
         const bool nextin = nextdot >= plane.distance;
-        if (curin != nextin && !std::isnan(curdot) && !std::isnan(nextdot)) {
+        if (curin != nextin && !std::isnan(curdot) && !std::isnan(nextdot) && n < 8) {
             const float scale = (plane.distance - curdot) / (nextdot - curdot);
             out[n].x = cur->x + ((v[next].x - cur->x) * scale);
             out[n].y = cur->y + ((v[next].y - cur->y) * scale);

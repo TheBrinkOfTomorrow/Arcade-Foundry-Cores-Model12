@@ -21,7 +21,7 @@ case "$(uname -s)" in
 Linux)
     if command -v apt-get >/dev/null 2>&1; then
         $SUDO apt-get update
-        $SUDO apt-get install -y build-essential cmake ninja-build python3 python3-pip git clang pkg-config
+        $SUDO apt-get install -y build-essential cmake ninja-build python3 python3-pip python3-venv git clang pkg-config
         # SDL 3 (window, input, audio, SDL_GPU) and the Vulkan loader
         $SUDO apt-get install -y libasound2-dev libpulse-dev libx11-dev libxext-dev libxrandr-dev libxcursor-dev \
             libxfixes-dev libxi-dev libxss-dev libxtst-dev libxkbcommon-dev libdrm-dev libgbm-dev libegl-dev \
@@ -80,10 +80,13 @@ Darwin)
     ;;
 esac
 
-# Debian 11 and similar ship CMake older than 3.20: use pip's.
+# Debian 11 and similar ship CMake older than 3.20: use pip's, in the shared
+# venv (AFIC_VENV, default ~/venvs/afic), never the system's Python
 if ! cmake --version | head -1 | awk '{split($3,v,"."); exit !(v[1] > 3 || (v[1] == 3 && v[2] >= 20))}'; then
-    python3 -m pip install --user --upgrade cmake
-    PATH="$HOME/.local/bin:$PATH"
+    venv=${AFIC_VENV:-$HOME/venvs/afic}
+    [ -x "$venv/bin/python" ] || { mkdir -p "$(dirname "$venv")" && python3 -m venv "$venv"; }
+    "$venv/bin/pip" install --upgrade cmake
+    PATH="$venv/bin:$PATH"
     export PATH
 fi
 

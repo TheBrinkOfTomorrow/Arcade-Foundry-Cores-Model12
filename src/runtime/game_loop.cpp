@@ -1,7 +1,10 @@
+#include "af_debug.h"
 #include "runtime/game_loop.h"
 
 #include <algorithm>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <fstream>
 #include <iterator>
 
@@ -60,7 +63,12 @@ GameLoop::GameLoop(M2Board::Images img, bool sound_enabled) {
         sound_ = std::make_unique<snd::SoundBoard>(img.sound_program, img.pcm1, img.pcm2);
 #endif
     board_ = std::make_unique<M2Board>(std::move(img));
+#if M2_FALLBACK_INTERP
+    cpu_ = std::make_unique<I960Ref>(board_.get());
+#else
     cpu_ = std::make_unique<Cpu>(board_.get());
+#endif
+    if (const char *v = af_debug_env("M2_STRICT")) strict_ = *v && std::strcmp(v, "0") != 0;
     ls_ = std::make_unique<Lockstep>(*cpu_);
     board_->attach(*cpu_, *ls_);
     cpu_->reset();
@@ -186,9 +194,8 @@ void GameLoop::run_frame_deferred_sound(const Inputs &inputs) {
 #else
         if (!gen::has_code(cpu_->m_IP)) {
 #endif
-            char b[128];
-            std::snprintf(b, sizeof b, "no recompiled code at %08x: add it to the seeds", cpu_->m_IP);
-            throw Fatal(b);
+            no_code();
+            continue;
         }
 #ifndef M2_FAST_GEN
         gen::run(*env_);
@@ -200,6 +207,36 @@ void GameLoop::run_frame_deferred_sound(const Inputs &inputs) {
         pending_sound_bytes_ = board_->take_sound_bytes();
         sound_frame_pending_ = true;
     }
+}
+
+// Code the recompiler did not reach. The fallback interpreter (MAME's i960
+// interpreter, src/refcore/i960_ref) runs it instruction by instruction with
+// the same lockstep bookkeeping as generated code (events and interrupts
+// before each instruction, the count after it) until control is back at an
+// address with recompiled code or the frame ends. Each new entry address is
+// logged: it is a seed for the next recompile (rules.md). With M2_STRICT=1,
+// or in a build without the interpreter, it is a hard error naming the address.
+void GameLoop::no_code() {
+    const uint32_t ip = cpu_->m_IP;
+#if M2_FALLBACK_INTERP
+    if (!strict_) {
+        if (fallback_seen_.insert(ip).second)
+            std::fprintf(stderr, "i960: fallback interpreter at %08x (frame %llu; a seed for the next recompile)\n", ip,
+                         (unsigned long long)frames_);
+        do {
+            const bool stop = ls_->boundary(); // may take an interrupt (IP changes) or end the frame
+            if (ls_->finished()) return;
+            if (stop) continue;
+            cpu_->execute_one();
+            ++ls_->count;
+            ++interpreted_;
+        } while (!gen::has_code(cpu_->m_IP));
+        return;
+    }
+#endif
+    char b[128];
+    std::snprintf(b, sizeof b, "no recompiled code at %08x: add it to the seeds", ip);
+    throw Fatal(b);
 }
 
 uint64_t GameLoop::execute_deferred_sound() {

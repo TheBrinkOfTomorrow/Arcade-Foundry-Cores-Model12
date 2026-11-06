@@ -18,7 +18,7 @@ import sys
 try:
     import lupa.lua54 as lupa
 except ImportError:
-    print("lua_plugin_mock_test: SKIP (pip install lupa)")
+    print("lua_plugin_mock_test: SKIP (no lupa: common/tools/afic-venv/setup.sh)")
     sys.exit(77)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

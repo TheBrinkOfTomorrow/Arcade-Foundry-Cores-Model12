@@ -24,6 +24,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <unordered_set>
 #include <vector>
 
 namespace m1 {
@@ -44,6 +45,9 @@ public:
     const Video &video() const { return video_; }
     uint64_t frame() const { return frame_; }
     uint64_t instructions() const { return env_.count; }
+    // Of those, run by the fallback interpreter (code with no recompiled version)
+    uint64_t interpreted() const { return env_.interpreted; }
+    size_t fallback_entries() const { return env_.seen.size(); }
     uint64_t stall_ticks() const { return stall_ticks_; }
     uint32_t pc() const { return cpu_.pc() & 0xffffff; }
 
@@ -101,7 +105,18 @@ private:
     snd::SoundBoard sound_;
     std::unique_ptr<Dsb> dsb_;
     v60::Core cpu_;
-    NativeEnv env_;
+    // Code the recompiler did not reach: MAME's V60 interpreter (v60::Interp)
+    // runs it until control is back in recompiled code, the run's limit or a
+    // pending interrupt the PSW lets in. Each new address is logged (a seed
+    // for the next recompile). M2_STRICT=1: a hard error, as before.
+    struct FallbackEnv : NativeEnv {
+        FallbackEnv();
+        void miss(v60::Core &c) override;
+        bool strict = false;
+        uint64_t interpreted = 0;
+        std::unordered_set<uint32_t> seen;
+    };
+    FallbackEnv env_;
     uint64_t frame_ = 0, next_vblank_ = kFrameTicks; // ticks
     uint64_t stall_ticks_ = 0, target_ = 0;
     double sound_done_ = 0; // seconds of board time the sound board has run

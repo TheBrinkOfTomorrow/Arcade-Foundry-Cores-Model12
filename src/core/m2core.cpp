@@ -1,7 +1,9 @@
-// The game core's C interface (include/afcore.h) over rt::GameLoop: what the
+// The game core's C interface (common/include/afcore.h) over rt::GameLoop: what the
 // desktop app does around the game, without SDL or a window, for front ends
 // that bring their own (Arcade Foundry: Insert Coin's SwiftUI and SDL apps).
 #include "afcore.h"
+#include "audio_ring.h"
+#include "board_inputs.h"
 #include "core_versions.h"
 
 #include "app/link_socket.h"
@@ -13,7 +15,6 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
-#include <deque>
 #include <exception>
 #include <filesystem>
 #include <fstream>
@@ -26,7 +27,7 @@ struct afcore {
     std::unique_ptr<app::TcpLink> link; // declared first: outlives the game, which holds it
     std::unique_ptr<rt::GameLoop> game;
     std::string save_dir;
-    std::deque<float> audio[2];
+    m2core::AudioRing audio[2]; // FM and PCM, interleaved stereo
     std::string error; // the board hit something the core cannot run: it stays stopped
     rt::Stereo stereo;
     int head_idle = -1; // frames since the last head-tracked render_eyes, -1 with the clip planes closed
@@ -51,172 +52,7 @@ template <typename C> void save_file(const std::string &path, const C &from) {
     f.write(reinterpret_cast<const char *>(from.data()), std::streamsize(from.size()));
 }
 
-// The app's mapping (app::Controls::sample) from controls to the board's ports.
-rt::Inputs board_inputs(const afcore_input &c) {
-    rt::Inputs in;
-    const float lock = rt::kModel2a ? 0x7f : 0x60;
-    const auto pedal = [](float v) {
-        return uint8_t(std::lround(rt::kPedalMin + std::clamp(v, 0.f, 1.f) * (rt::kPedalMax - rt::kPedalMin)));
-    };
-    in.steer = uint8_t(std::lround(0x80 + std::clamp(c.steer, -1.f, 1.f) * lock));
-    in.accel = pedal(c.accel);
-    in.brake = pedal(c.brake);
-    const auto low = [&](uint8_t &port, uint8_t bit, uint32_t button) {
-        if (c.buttons & button) port &= uint8_t(~bit);
-    };
-    if (rt::kGuns) { // two light guns; start 1 and 2 on IN0 (MAME's model2 ports), triggers on IN1
-        low(in.in0, 0x01, AFCORE_COIN);
-        low(in.in0, rt::kIn0Test, AFCORE_TEST);
-        low(in.in0, rt::kIn0Service, AFCORE_SERVICE);
-        low(in.in0, 0x10, AFCORE_START);
-        low(in.in0, 0x20, AFCORE_START2);
-        low(in.in1, 0x01, AFCORE_TRIGGER1);
-        low(in.in1, 0x02, AFCORE_TRIGGER2);
-        if (rt::kBel) { // player 1's missile: VIEW3 (the front ends' West or X; B reloads there) or BUTTON2
-            low(in.in1, 0x10, AFCORE_VIEW3);
-            low(in.in1, 0x10, AFCORE_BUTTON2);
-        }
-        for (int n = 0; n < 2; n++) rt::set_gun(in, n, c.gun_x[n], c.gun_y[n]);
-        return in;
-    }
-    if (rt::kFighting) { // two players' punch, kick, guard and joystick on IN1 and IN2 (MAME's model2 ports)
-        low(in.in0, 0x01, AFCORE_COIN);
-        low(in.in0, 0x04, AFCORE_TEST);
-        low(in.in0, 0x08, AFCORE_SERVICE);
-        low(in.in0, 0x10, AFCORE_START);
-        low(in.in0, 0x20, AFCORE_START2);
-        static const struct { uint8_t bit; uint32_t button; } fight[] = {
-            {uint8_t(rt::kDoab ? 0x02 : 0x01), AFCORE_PUNCH}, {uint8_t(rt::kDoab ? 0x04 : 0x02), AFCORE_KICK},
-            {uint8_t(rt::kDoab ? 0x01 : 0x04), AFCORE_GUARD}, {0x10, AFCORE_DOWN}, // Dead or Alive: GUARD holds
-            {0x20, AFCORE_UP},    {0x40, AFCORE_RIGHT}, {0x80, AFCORE_LEFT}};
-        for (const auto &f : fight) {
-            if (rt::kDynabb97 && f.bit == 0x04) { // no third button: guard swings the bat, fully
-                in.bat[0] = c.buttons & f.button ? 0xff : 0;
-                in.bat[1] = c.buttons2 & f.button ? 0xff : 0;
-                continue;
-            }
-            low(in.in1, f.bit, f.button);
-            if (c.buttons2 & f.button) in.in2 &= uint8_t(~f.bit);
-        }
-        return in;
-    }
-    if (rt::kDesert) { // MAME's desert ports: VR1-3 on IN0, the shift lever, machine gun and cannon on IN1
-        in.steer = uint8_t(std::lround(0x80 + std::clamp(c.steer, -1.f, 1.f) * 0x7f));
-        low(in.in0, 0x01, AFCORE_COIN);
-        low(in.in0, 0x04, AFCORE_TEST);
-        low(in.in0, 0x08, AFCORE_SERVICE);
-        low(in.in0, rt::kIn0Start, AFCORE_START);
-        low(in.in0, 0x20, AFCORE_VIEW1);
-        low(in.in0, 0x40, AFCORE_VIEW2);
-        low(in.in0, 0x80, AFCORE_VIEW3);
-        low(in.in1, 0x01, AFCORE_VIEW4);
-        low(in.in1, 0x10, AFCORE_SHIFT_UP);
-        low(in.in1, 0x20, AFCORE_SHIFT_DOWN);
-        return in;
-    }
-    if (rt::kSkytargt) { // the flight stick: STICKX reads lower pushed right (MAME's PORT_REVERSE), STICKY lower pushed forward
-        in.stick_x = uint8_t(std::lround(0x80 - std::clamp(c.steer, -1.f, 1.f) * 0x7f));
-        in.stick_y = uint8_t(std::lround(0x80 + std::clamp(c.stick_y, -1.f, 1.f) * 0x7f));
-        low(in.in0, 0x01, AFCORE_COIN);
-        low(in.in0, 0x04, AFCORE_TEST);
-        low(in.in0, 0x08, AFCORE_SERVICE);
-        low(in.in0, 0x20, AFCORE_BUTTON3); // Star Wars Arcade's buttons: view change
-        low(in.in0, rt::kIn0Start, AFCORE_START);
-        low(in.in1, 0x10, AFCORE_TRIGGER1); // machine gun
-        low(in.in1, 0x20, AFCORE_BUTTON2);  // missile
-        return in;
-    }
-    if (rt::kTopskatr) { // the curving follows the steering, the slide the stick's forward and back
-        in.steer = uint8_t(std::lround(0x80 + std::clamp(c.steer, -1.f, 1.f) * 0x7f));
-        in.roll = uint8_t(std::lround(0x80 + std::clamp(c.stick_y, -1.f, 1.f) * 0x7f));
-        low(in.in0, 0x01, AFCORE_COIN);
-        low(in.in0, 0x04, AFCORE_TEST);
-        low(in.in0, 0x08, AFCORE_SERVICE);
-        low(in.in0, 0x40, AFCORE_START);
-        low(in.in0, 0x20, AFCORE_VIEW1);      // jump front
-        low(in.in1, 0x01, AFCORE_VIEW2);      // jump tail
-        low(in.in0, 0x80, AFCORE_SHIFT_DOWN); // select left
-        low(in.in0, 0x10, AFCORE_SHIFT_UP);   // select right
-        low(in.in0, 0x80, AFCORE_LEFT);
-        low(in.in0, 0x10, AFCORE_RIGHT);
-        return in;
-    }
-    if (rt::kSkisuprg) { // the inclining follows the steering, the swing the stick's forward and back; no start button: select 1 (START too)
-        in.steer = uint8_t(std::lround(0x80 + std::clamp(c.steer, -1.f, 1.f) * 0x7f));
-        in.pitch = uint8_t(std::lround(0x80 + std::clamp(c.stick_y, -1.f, 1.f) * 0x7f));
-        low(in.in0, 0x01, AFCORE_COIN);
-        low(in.in0, 0x04, AFCORE_TEST);
-        low(in.in0, 0x08, AFCORE_SERVICE);
-        low(in.in0, 0x40, AFCORE_START);      // select 1
-        low(in.in0, 0x40, AFCORE_VIEW1);
-        low(in.in0, 0x80, AFCORE_VIEW2);      // select 2
-        low(in.in0, 0x10, AFCORE_VIEW3);      // select 3
-        low(in.in0, 0x20, AFCORE_SHIFT_UP);   // zoom in
-        low(in.in1, 0x01, AFCORE_SHIFT_DOWN); // zoom out
-        return in;
-    }
-    if (rt::kSegawski) { // the slide follows the steering; no start button: set (START or VIEW1) starts and confirms
-        in.steer = uint8_t(std::lround(0x80 + std::clamp(c.steer, -1.f, 1.f) * 0x7f));
-        low(in.in0, 0x01, AFCORE_COIN);
-        low(in.in0, 0x04, AFCORE_TEST);
-        low(in.in0, 0x08, AFCORE_SERVICE);
-        low(in.in0, 0x40, AFCORE_DOWN);    // select down
-        low(in.in1, 0x01, AFCORE_START);   // set
-        low(in.in1, 0x01, AFCORE_VIEW1);
-        low(in.in1, 0x02, AFCORE_UP);      // select up
-        low(in.in1, 0x04, AFCORE_VIEW3);   // pitch left (the front ends' West button)
-        low(in.in1, 0x08, AFCORE_VIEW2);   // pitch right (East)
-        return in;
-    }
-    if (rt::kWaverunr) { // the handle bar and the rider's lean both follow the steering; the throttle lever reads 0xff released, 0 gripped (the input test's THROTTLE LEVER)
-        in.steer = uint8_t(std::lround(0x80 + std::clamp(c.steer, -1.f, 1.f) * 0x7f));
-        in.roll = in.steer;
-        in.throttle = uint8_t(std::lround(0xff - std::clamp(c.accel, 0.f, 1.f) * 0xff));
-        in.pitch = uint8_t(std::lround(0x80 + std::clamp(c.stick_y, -1.f, 1.f) * 0x7f));
-        low(in.in0, 0x01, AFCORE_COIN);
-        low(in.in0, 0x04, AFCORE_TEST);
-        low(in.in0, 0x08, AFCORE_SERVICE);
-        low(in.in0, rt::kIn0Start, AFCORE_START);
-        low(in.in1, 0x01, AFCORE_VIEW1);
-        return in;
-    }
-    if (rt::kManxControls) { // the bank sensor reads lower leaning right (MAME's PORT_REVERSE)
-        in.bank = uint8_t(std::lround(0x80 - std::clamp(c.steer, -1.f, 1.f) * 0x7f));
-        low(in.in0, 0x01, AFCORE_COIN);
-        low(in.in0, 0x04, AFCORE_TEST);
-        low(in.in0, 0x08, AFCORE_SERVICE);
-        low(in.in0, rt::kIn0Start, AFCORE_START);
-        low(in.in1, 0x10, rt::kMotoraid ? AFCORE_PUNCH : AFCORE_SHIFT_UP); // Motor Raid: punch and kick
-        low(in.in1, 0x20, rt::kMotoraid ? AFCORE_KICK : AFCORE_SHIFT_DOWN);
-        return in;
-    }
-    if (rt::kIndyControls) { // shift up and down, two view buttons on IN1 (MAME's indy500 ports; Super GT 24h has view 1 only)
-        low(in.in0, 0x01, AFCORE_COIN);
-        low(in.in0, 0x04, AFCORE_TEST);
-        low(in.in0, 0x08, AFCORE_SERVICE);
-        low(in.in0, rt::kIn0Start, AFCORE_START);
-        low(in.in1, 0x01, AFCORE_VIEW1);
-        low(in.in1, 0x02, AFCORE_VIEW2);
-        low(in.in1, 0x10, AFCORE_SHIFT_UP);
-        low(in.in1, 0x20, AFCORE_SHIFT_DOWN);
-        return in;
-    }
-    static const uint8_t gearvalue[5] = {0, 2, 1, 6, 5}; // MAME daytona_gearbox_r: neutral, 1-4
-    in.in1 = uint8_t((in.in1 & ~0x70) | (gearvalue[std::clamp(c.gear, 0, 4)] << 4));
-    low(in.in0, 0x01, AFCORE_COIN);
-    low(in.in0, 0x04, AFCORE_TEST);
-    low(in.in0, 0x08, AFCORE_SERVICE);
-    low(in.in0, rt::kIn0Start, AFCORE_START);
-    low(in.in0, 0x20, AFCORE_VIEW1);
-    if (rt::kModel2a) { // IN2 is the hand brake (analogue, 0 = off)
-        in.handbrake = uint8_t(std::lround(std::clamp(c.handbrake, 0.f, 1.f) * 0xff));
-        return in;
-    }
-    low(in.in0, 0x40, AFCORE_VIEW2);
-    low(in.in0, 0x80, AFCORE_VIEW3);
-    low(in.in1, 0x01, AFCORE_VIEW4);
-    return in;
-}
+using m2core::board_inputs;
 
 void core_save(afcore *c) {
     if (!c || c->save_dir.empty()) return;
@@ -283,13 +119,10 @@ void core_run_frame(afcore *c, const afcore_input *input) {
         const std::vector<float> pcm = sb->take_pcm();
         if constexpr (kOutputGain != 1.0f)
             for (float &v : fm) v = std::clamp(v * kOutputGain, -1.0f, 1.0f);
-        c->audio[0].insert(c->audio[0].end(), fm.begin(), fm.end());
-        c->audio[1].insert(c->audio[1].end(), pcm.begin(), pcm.end());
         // Nobody reading (paused output): keep at most a second.
-        for (int s = 0; s < 2; ++s) {
-            const size_t cap = 2 * size_t(sb->fm_rate() > sb->pcm_rate() ? sb->fm_rate() : sb->pcm_rate());
-            if (c->audio[s].size() > cap) c->audio[s].erase(c->audio[s].begin(), c->audio[s].end() - cap);
-        }
+        const size_t cap = 2 * size_t(sb->fm_rate() > sb->pcm_rate() ? sb->fm_rate() : sb->pcm_rate());
+        c->audio[0].push(fm.data(), fm.size(), cap);
+        c->audio[1].push(pcm.data(), pcm.size(), cap);
     }
 }
 
@@ -307,11 +140,7 @@ double core_audio_rate(afcore *c, int stream) {
 
 size_t core_audio_read(afcore *c, int stream, float *out, size_t max_frames) {
     if (stream < 0 || stream > 1 || !out) return 0;
-    std::deque<float> &q = c->audio[stream];
-    const size_t frames = std::min(max_frames, q.size() / 2);
-    std::copy_n(q.begin(), 2 * frames, out);
-    q.erase(q.begin(), q.begin() + std::ptrdiff_t(2 * frames));
-    return frames;
+    return c->audio[stream].read(out, 2 * max_frames) / 2;
 }
 
 int core_link_start(afcore *c, int listen_port, const char *next, int framesync, char *err, size_t err_size) {
@@ -393,12 +222,31 @@ const uint32_t *core_hud_screen(afcore *c, int *width, int *height) {
     return c->stereo.hud().empty() ? nullptr : c->stereo.hud().data();
 }
 
+int core_check_roms(const char *rom_path, char *report, size_t report_size) {
+    try {
+        const std::string rom = rom_path ? rom_path : "";
+        std::error_code ec;
+        if (std::filesystem::is_directory(rom, ec)) {
+            set_error(report, report_size, "a folder of imported images: nothing to check");
+            return -1;
+        }
+        rt::import_rom_set(rom); // reads every file and checks its size and CRC
+        set_error(report, report_size, "");
+        return 1;
+    } catch (const std::exception &e) {
+        set_error(report, report_size, e.what());
+        return 0;
+    }
+}
+
 const afcore_api kApi = {
     AFCORE_API_VERSION, sizeof(afcore_api), AFCORE_CORE_VERSION(M2_ROMSET_ID), M2_ROMSET, rt::kGameTitle, rt::GameLoop::kFrameHz,
     rt::GameLoop::kWidth, rt::GameLoop::kHeight,
     core_create, core_destroy, core_run_frame, core_screen,
     core_audio_rate, core_audio_read, core_save, core_link_start, core_link_state, core_error,
     core_render_eyes, core_eye_screen, core_hud_screen, kStereoScale,
+    nullptr, // screen_surface
+    core_check_roms,
 };
 
 } // namespace

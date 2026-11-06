@@ -1,8 +1,8 @@
 # Native audio backend (experimental)
 
 The shared C++ backend in `src/runtime/native_sound_*` and
-`native_sample_mixer.*` is used by the desktop (Linux, macOS, Windows) and
-native GXM Vita frontends. It decodes the supplied Daytona93 music/command
+`native_sample_mixer.*` is used by the desktop (Linux, macOS, Windows)
+frontend (and was used by the archived PS Vita port). It decodes the supplied Daytona93 music/command
 data directly and mixes the original samples at 48 kHz. It does not construct
 or execute a `SoundBoard`, recompiled 68000, YM generator or MultiPCM device.
 The user-supplied, importer-verified ROM set is still required.
@@ -20,12 +20,8 @@ the default and can be selected again without replacing game data or saves.
   ```
 
   Use `--audio reference` to return to reference audio. The selection is saved.
-- Vita GPU22 and newer: Options → **Audio Engine: Native (Test)**, then
-  **Reset Game**. Merely resuming an existing game does not switch its backend.
-  To compare, select **Reference** and reset again. Existing volume/mute and
-  clock settings still apply; this change does not raise the clocks.
 
-SDL3 on desktop and SDL2 on Vita own the playback callback. A bounded 16 KiB
+SDL3 owns the playback callback. A bounded 16 KiB
 single-producer/single-consumer queue carries commands from the game thread.
 The callback advances sequencing and mixing from the audio-device clock;
 graphics updates do not supply its time. Pausing stops audio, whereas muting
@@ -48,9 +44,8 @@ frames are reported separately from hard-clipped samples. This can reshape
 loud attacks, so matching measured RMS is not a claim of identical sound or
 perceived loudness on the device.
 
-This applies to Vita and all desktop frontends. Reference audio, saved
-volume/mute settings, sample pitch, command timing and voice balance are
-unchanged. Routine Vita logging stays off; fault reporting remains enabled.
+Reference audio, saved volume/mute settings, sample pitch, command timing and
+voice balance are unchanged.
 
 ## Music and effects volumes
 
@@ -80,9 +75,7 @@ FM is not synthesized: a separate reference audit of these two replays found
 code supplies the music-event clock formerly derived from the YM timer.
 
 Native audio continuing through a graphics stall does not make game logic or
-geometry faster. A speed benefit, sound quality, suspend/resume and long-run
-stability on Vita must be measured on the device. Linux host checks and Vita
-cross-compilation do not validate Windows/macOS execution or Vita frame rate.
+geometry faster. Linux host checks do not validate Windows/macOS execution.
 
 ## Reproduce validation
 
@@ -94,9 +87,6 @@ ctest --test-dir build --output-on-failure
 bash scripts/test_native_sound_rom.sh build 6000
 bash scripts/test_native_sound_oracle.sh build 6000 build/rom_cache/daytona93 build/native-oracle-race race
 bash scripts/test_native_sound_oracle.sh build 6000 build/rom_cache/daytona93 build/native-oracle-attract attract
-bash scripts/test_vita_sound_pipeline.sh build 6000
-python3 scripts/test_vita_gpu_lifetime.py --sanitize
-python3 scripts/test_vita_renderer.py --sanitize
 ```
 
 The native ROM test runs the real main board with `GameLoop(..., false)` and
@@ -106,13 +96,5 @@ and 48,000 additional audio frames while game frames/instructions/commands are
 held still. The reference pipeline test instead checks unchanged screen
 hashes, instruction counts, command ordering and bit-identical reference audio.
 
-Vita diagnostics identify `audio=NATIVE_TEST` and
-`reference_sound_board=0`. `native_last_ms`/`native_peak_ms` measure callback
-wall time, not main-frame work. `native_frames`, `native_notes`, `native_voices`,
-`native_queue`, `native_overflows`, `native_failed`, `native_unsupported` and
-`native_invalid` make progress and failures observable in diagnostic builds.
-GPU23 disables routine logging by default and preserves the existing file;
-unexpected faults still append a record. Diagnostic-enabled builds replace
-`ux0:data/daytona93/vita-diag.log` on startup, so copy it before relaunching.
-See [Vita diagnostics](../platform/vita/PERFORMANCE.md) for the build switch
-and the GPU22 device-log findings.
+The archived PS Vita port's diagnostics (`vita-diag.log`, the GPU22 to GPU25
+device findings) are on the `ports-archive` branch under `platform/vita/`.

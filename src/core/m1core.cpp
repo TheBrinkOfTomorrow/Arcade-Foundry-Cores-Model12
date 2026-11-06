@@ -1,4 +1,4 @@
-// The game core's C interface (include/afcore.h) for a Model 1 game: the
+// The game core's C interface (common/include/afcore.h) for a Model 1 game: the
 // board (src/model1/board) run a frame at a time, for the Arcade Foundry: Insert Coin front
 // ends. Link play: the comm board (src/model1/comm_board) over TCP.
 #include "afcore.h"
@@ -328,11 +328,26 @@ const uint32_t *core_hud_screen(afcore *c, int *width, int *height) {
     return c->stereo.hud().empty() ? nullptr : c->stereo.hud().data();
 }
 
+int core_check_roms(const char *rom_path, char *report, size_t report_size) {
+    try {
+        const m1::RomSet *set = m1::find_rom_set(M1_SET_NAME);
+        if (!set) throw std::runtime_error("no Model 1 ROM set " M1_SET_NAME);
+        m1::load_rom_set(*set, rom_path ? rom_path : ""); // reads every file and checks its size and CRC
+        set_error(report, report_size, "");
+        return 1;
+    } catch (const std::exception &e) {
+        set_error(report, report_size, e.what());
+        return 0;
+    }
+}
+
 const afcore_api kApi = {
     AFCORE_API_VERSION, sizeof(afcore_api), AFCORE_CORE_VERSION(M2_ROMSET_ID), M1_SET_NAME, M1_GAME_TITLE, m1::Board::kFrameHz, m1::Video::W, m1::Video::H,
     core_create, core_destroy, core_run_frame, core_screen,
     core_audio_rate, core_audio_read, core_save, core_link_start, core_link_state, core_error,
     core_render_eyes, core_eye_screen, core_hud_screen, kStereoScale,
+    nullptr, // screen_surface
+    core_check_roms,
 };
 
 } // namespace

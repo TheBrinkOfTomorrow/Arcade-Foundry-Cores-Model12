@@ -26,7 +26,7 @@ struct Config {
     bool pace_vrr = false;          // each frame held to 1/57.52 s, for a variable-refresh display
     bool skip_launcher = false; // start the game straight away (as --autostart); Esc still opens the launcher
     // Hold the cabinet's Test button for 3 s once the game runs (rt::TestHold),
-    // for the test menu without an F2 key: mobile, consoles. Not saved; it
+    // for the test menu without an F2 key (a gamepad-only setup). Not saved; it
     // clears itself when done.
     bool hold_test = false;
     float volume = 0.8f;      // 0..1

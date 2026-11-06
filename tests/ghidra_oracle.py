@@ -26,7 +26,7 @@ import tempfile
 try:
     import pypcode
 except ImportError:
-    print("ghidra_oracle: SKIP (pip install pypcode)")
+    print("ghidra_oracle: SKIP (no pypcode: common/tools/afic-venv/setup.sh)")
     sys.exit(77)
 
 TOKEN = re.compile(r"-?0x[0-9a-f]+|[a-z]+[0-9]*|[0-9]+|\+[01]\.0")

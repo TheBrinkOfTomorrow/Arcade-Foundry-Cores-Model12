@@ -21,7 +21,7 @@ import sys
 try:
     import lupa.lua54 as lupa
 except ImportError:
-    print("lua_core_test: SKIP (pip install lupa for a Lua 5.4 runtime)")
+    print("lua_core_test: SKIP (no lupa for a Lua 5.4 runtime: common/tools/afic-venv/setup.sh)")
     sys.exit(77)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

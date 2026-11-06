@@ -1,3 +1,4 @@
+#include "af_debug.h"
 #include "runtime/m2_replay_bus.h"
 
 #include <cinttypes>
@@ -240,7 +241,7 @@ void M2ReplayBus::end_of_epoch_check() {
         const uint64_t h = trace::hash_bytes(bytes.data(), bytes.size());
         if (h != s.regions[i].hash) {
             // Leave our copy next to MAME's dump (M2TRACE_DUMP_EPOCH) for a byte diff.
-            if (const char *dir = std::getenv("M2REPLAY_DUMP_DIR")) {
+            if (const char *dir = af_debug_env("M2REPLAY_DUMP_DIR")) {
                 char path[512];
                 std::snprintf(path, sizeof path, "%s/ours_e%" PRIu64 "_%08x.bin", dir, epoch_, r.base);
                 if (FILE *f = std::fopen(path, "wb")) {

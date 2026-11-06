@@ -656,7 +656,19 @@ int main(int argc, char **argv) {
             } else {
                 o << "uint32_t key_of(const v60::Core &, uint32_t pc) { return pc; }\n";
             }
+            // Every instruction's key, sorted: has_native (the fallback
+            // interpreter runs until control is back at one of them)
+            o << "const uint32_t kKeys[] = {\n";
+            for (uint32_t key : pcs) {
+                char b[32];
+                std::snprintf(b, sizeof b, "    0x%08xu,\n", key);
+                o << b;
+            }
+            o << "};\n";
             o << "} // namespace\n\n"
+                 "bool has_native(const v60::Core &c, uint32_t pc) {\n"
+                 "    return std::binary_search(std::begin(kKeys), std::end(kKeys), key_of(c, pc & 0xffffffu));\n"
+                 "}\n\n"
                  "void run_native(v60::Core &c, NativeEnv &env) {\n"
                  "    while (env.count < env.limit && !(env.irq_pending && c.interrupts_enabled())) {\n"
                  "        const uint32_t key = key_of(c, c.m_reg[32] & 0xffffffu);\n"

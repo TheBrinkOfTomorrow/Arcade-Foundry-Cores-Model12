@@ -23,7 +23,8 @@ struct NativeEnv {
     // An interrupt is pending: run_native also returns after an instruction
     // that enables interrupts (UPDPSW, LDPR, RETIU, RETIS)
     bool irq_pending = false;
-    // Control reached an address with no recompiled code: a hard error.
+    // Control reached an address with no recompiled code (run_native has
+    // returned): a hard error, or (Board's) the fallback interpreter.
     virtual void miss(v60::Core &c);
     virtual ~NativeEnv() = default;
 };
@@ -33,5 +34,8 @@ struct NativeEnv {
 void run_native(v60::Core &c, NativeEnv &env);
 // How many instructions were recompiled.
 uint64_t native_instructions();
+// Whether there is recompiled code for pc (with c's RAM, for code the game
+// copies into RAM).
+bool has_native(const v60::Core &c, uint32_t pc);
 
 } // namespace m1

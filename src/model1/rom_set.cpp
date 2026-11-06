@@ -1,6 +1,6 @@
 #include "model1/rom_set.h"
 
-#include "runtime/archive.h"
+#include "afcommon/archive.h"
 
 #include <filesystem>
 #include <fstream>
@@ -203,7 +203,7 @@ const std::vector<Region> kRegions = {
 class Source {
 public:
     explicit Source(const std::string &path) : path_(path) {
-        if (!std::filesystem::is_directory(path)) archive_ = rt::open_archive(path);
+        if (!std::filesystem::is_directory(path)) archive_ = afc::open_archive(path);
     }
     // By name, else by size and CRC (sets name some files differently); empty if absent
     std::vector<uint8_t> find(const std::string &name, uint32_t size, uint32_t crc) {
@@ -232,7 +232,7 @@ public:
 
 private:
     std::string path_;
-    std::unique_ptr<rt::Archive> archive_;
+    std::unique_ptr<afc::Archive> archive_;
 };
 
 } // namespace

@@ -8,6 +8,7 @@
 // int conversions that can overflow or see a NaN are pinned to the x86 result
 // MAME's reference build gives, so every host agrees.
 
+#include "af_debug.h"
 #include "runtime/raster.h"
 #ifdef M2_VITA_RENDER_OPT
 #include "runtime/raster_texel.h"
@@ -237,7 +238,7 @@ void Raster::set_threads(int count) {
 // otherwise up to four, one fewer than the machine has, leaving one for
 // the game code and sound.
 int Raster::default_threads() {
-    if (const char *e = std::getenv("M2_RASTER_THREADS"); e && *e) return std::clamp(std::atoi(e), 1, 8);
+    if (const char *e = af_debug_env("M2_RASTER_THREADS"); e && *e) return std::clamp(std::atoi(e), 1, 8);
     const int hw = int(std::thread::hardware_concurrency());
     return std::clamp(hw - 1, 1, 4);
 }

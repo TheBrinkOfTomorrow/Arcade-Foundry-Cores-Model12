@@ -1,13 +1,12 @@
 // license:BSD-3-Clause
 // copyright-holders:Farfetch'd, R. Belmont
 //
-// TEST ORACLE ONLY. Never linked into the game.
-//
 // MAME's i960 instruction interpreter, transplanted from
 // src/devices/cpu/i960/i960.cpp at dddd73680656e355bb2b5beecab1167c9f07bf81
 // (BSD-3-Clause; notice above kept as the licence requires), over the
 // runtime's Cpu context. m2replay runs the game through it to check the
-// runtime and the replay against MAME independently of the recompiler.
+// runtime and the replay against MAME independently of the recompiler, and
+// the game (GameLoop) runs code the recompiler did not reach through it.
 // Changes: device framework, cycle accounting (m_icount kept, unused) and
 // the burst-stall machinery removed. See THIRD_PARTY.md.
 

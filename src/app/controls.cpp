@@ -300,12 +300,11 @@ float Controls::value(Action a, const bool *keys, const Devices &d) const {
         // Apply after calibration/dead zone, preserving centre and full lock.
         if (sensitivity != 1.0f) joy = std::pow(joy, 1.0f / sensitivity);
     }
-    return std::max({v, joy, touch[a]});
+    return std::max(v, joy);
 }
 
 bool Controls::analog_source(Action a, const Devices &d) const {
-    return (touch_steering && (a == SteerLeft || a == SteerRight)) ||
-           (d.pad && bind[a].pad.kind == PadInput::Axis) || (bind[a].joy.kind == JoyInput::Axis && d.find(bind[a].joy.guid));
+    return (d.pad && bind[a].pad.kind == PadInput::Axis) || (bind[a].joy.kind == JoyInput::Axis && d.find(bind[a].joy.guid));
 }
 
 rt::Inputs Controls::sample(const bool *keys, const Devices &d) {
