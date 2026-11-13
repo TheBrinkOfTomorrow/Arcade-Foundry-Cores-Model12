@@ -25,12 +25,31 @@ Dsb2::Dsb2(const std::vector<uint8_t> &program, std::vector<uint8_t> mpeg) : pro
         if (level == 2) timer_irq_ = false; // HOLD_LINE: cleared once taken
         update_irq();
     };
-    sched_.at(kIps / 1000, [this] { tick_1khz(); });
-    sched_.at(kIps / 50, [this] { update_stream(); });
+    sched_.at(kIps / 1000, event(kTickEvent, 0), kTickEvent);
+    sched_.at(kIps / 50, event(kStreamEvent, 0), kStreamEvent);
 }
 
 void Dsb2::receive(uint8_t byte, double seconds) {
-    sched_.at(uint64_t(std::llround(seconds * double(kIps))), [this, byte] { deliver(byte); });
+    sched_.at(uint64_t(std::llround(seconds * double(kIps))), event(kByteEvent, byte), kByteEvent, byte);
+}
+
+std::function<void()> Dsb2::event(uint32_t tag, uint64_t arg) {
+    switch (tag) {
+    case kTickEvent: return [this] { tick_1khz(); };
+    case kStreamEvent: return [this] { update_stream(); };
+    case kByteEvent: return [this, b = uint8_t(arg)] { deliver(b); };
+    default: return nullptr;
+    }
+}
+
+void Dsb2::state(rt::StateIO &s) {
+    s.mark("DSB2");
+    cpu_.state(s);
+    sched_.state(s, [this](uint32_t tag, uint64_t arg) { return event(tag, arg); });
+    rt::state_keeping(s, *decoder_, [this](m1::mpeg_audio &d) { d.keep_rom(*decoder_); });
+    s(rx_enable_), s(rxrdy_), s(overrun_), s(expect_mode_), s(configured_), s(rx_data_), s(timer_irq_), s(ms_), s(cmd_);
+    s(start_), s(end_), s(mp_start_), s(mp_end_), s(mp_vol_), s(mp_pan_), s(rom_bank_), s(playing_);
+    s(mp_pos_), s(audio_pos_), s(audio_avail_), s(audio_buf_), s(updates_), s(out_);
 }
 
 void Dsb2::deliver(uint8_t byte) {
@@ -49,7 +68,7 @@ void Dsb2::tick_1khz() {
     timer_irq_ = true;
     update_irq();
     ++ms_;
-    sched_.at(uint64_t(std::llround(double(ms_ + 1) * double(kIps) / 1000.0)), [this] { tick_1khz(); });
+    sched_.at(uint64_t(std::llround(double(ms_ + 1) * double(kIps) / 1000.0)), event(kTickEvent, 0), kTickEvent);
 }
 
 void Dsb2::advance_to(double seconds) {
@@ -139,7 +158,7 @@ void Dsb2::fifo_w(uint8_t data) {
 
 void Dsb2::update_stream() {
     ++updates_;
-    sched_.at(uint64_t(std::llround(double(updates_ + 1) * double(kIps) / 50.0)), [this] { update_stream(); });
+    sched_.at(uint64_t(std::llround(double(updates_ + 1) * double(kIps) / 50.0)), event(kStreamEvent, 0), kStreamEvent);
     int samples = int(kRate / 50);
     const float scale = 1.0f / (32768.0f * 128.0f);
     for (;;) {

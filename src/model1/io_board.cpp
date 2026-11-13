@@ -35,6 +35,12 @@ constexpr uint64_t kLatch[19] = {us(742), us(1086.5), us(1431), us(1775.5), us(2
 constexpr uint64_t kLatchPass = us(7289.5);
 constexpr uint64_t kStoreFirst = us(282.5), kStoreEach = us(286.25), kStoreDone = us(36851.5), kStorePass = us(37082);
 constexpr uint64_t kLoadDone = us(210), kLoadFirst = us(444.5), kLoadEach = us(237.25), kLoadPass = us(31022.5);
+// EPR-14869, timed: the command clears this long after the V60 wrote it.
+// Measured under MAME by the game's polls of it. A store (2) on Virtua
+// Formula's first boot (blank EEPROM): 33,539 polls, 35,635 us. A latch (1):
+// 6,412 and 7,066 polls in its test mode (the only latches a game polls),
+// 7,490 and 7,510 us; the BIOS's main loop sets the phase, not modelled.
+constexpr uint64_t kStoreA = us(35635), kLatchA = us(7500);
 // An idle pass writing an EEPROM word: the bits take 1.75 us more each one
 constexpr uint64_t kWordPass = us(2619), kWordOne = us(1.75);
 } // namespace
@@ -108,6 +114,10 @@ void IoBoard::ram_w(uint32_t index, uint8_t v) {
     if (index == 0x11 && drive_commands.size() < kMaxDrive) drive_commands.push_back(v);
     if (index != 0x20 || (bios_b_ && now_)) return;
     if (now_ && !ready_) {
+        if (ready_at_ == UINT64_MAX) { // the first command: the BIOS takes it at its next pass
+            const uint64_t t = now_(), r = (t + kPass - kPassPhase % kPass) % kPass;
+            ready_at_ = t + (r ? kPass - r : 0) + kReadyAfter;
+        }
         settle();
         if (!ready_) {
             pending_ = v;
@@ -126,9 +136,9 @@ Controls Controls::at_rest(const std::string &set) {
 }
 
 void IoBoard::settle() {
-    if (ready_ || now_() < kReadyTicks) return;
+    if (ready_ || now_() < ready_at_) return;
+    if (pending_ >= 0) command(uint8_t(std::exchange(pending_, -1))); // completes now, untimed
     ready_ = true;
-    if (pending_ >= 0) command(uint8_t(std::exchange(pending_, -1)));
 }
 
 void IoBoard::command(uint8_t v) {
@@ -139,10 +149,18 @@ void IoBoard::command(uint8_t v) {
         ram_[9] = controls.in1;
         ram_[10] = controls.in2;
         for (int i = 11; i < 15; i++) ram_[size_t(i)] = 0xff;
+        if (now_ && ready_) { // timed (not the first command, which completes when the BIOS is up)
+            busy_until_ = now_() + kLatchA;
+            return;
+        }
         break;
     case 2: // store the settings
         std::memcpy(eeprom.data(), &ram_[0x100], eeprom.size());
         eeprom_dirty = true;
+        if (now_ && ready_) { // timed: the command clears once the BIOS has written the EEPROM
+            busy_until_ = now_() + kStoreA;
+            return;
+        }
         break;
     case 3: // load the settings
         std::memcpy(&ram_[0x100], eeprom.data(), eeprom.size());
@@ -155,6 +173,7 @@ void IoBoard::command(uint8_t v) {
 uint32_t IoBoard::read(uint32_t a, unsigned size) {
     if (bios_b_ && now_) bios_b_to(now_());
     else if (now_ && !ready_) settle();
+    else if (busy_until_ && now_() >= busy_until_) busy_until_ = 0, ram_[0x20] = 0;
     const uint32_t i = (a & 0xfff) >> 1;
     if (size == 4) return ram_r(i) | uint32_t(ram_r(i + 1)) << 16;
     if (size == 1 && (a & 1)) return 0; // the high byte is not connected

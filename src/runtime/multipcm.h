@@ -6,6 +6,8 @@
 // sample and envelope arithmetic is MAME's, expression for expression.
 #pragma once
 
+#include "runtime/state_io.h"
+
 #include <cstdint>
 #include <memory>
 
@@ -27,6 +29,7 @@ public:
     // bit for bit). The sound board marks the selected slot at each key-on
     // with whose voice it is (SoundBoard::voice_channel).
     void set_volumes(float music, float effects) { music_ = music, effects_ = effects; }
+    void state(rt::StateIO &s); // save states (the volumes stay)
     void set_effect(bool effect) {
         if (cur_slot_ < uint32_t(kVoices)) slots_[cur_slot_].effect = effect;
     }

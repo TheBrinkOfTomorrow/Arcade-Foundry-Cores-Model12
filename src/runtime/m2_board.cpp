@@ -318,6 +318,50 @@ void M2Board::set_link(LinkTransport *transport, bool framesync) {
     comm_board_->set_framesync(framesync);
 }
 
+std::function<void()> M2Board::lockstep_callback(int tag) {
+    if (tag == kUartTag) return [this] { uart_shift_done(); };
+    return nullptr;
+}
+
+void M2Board::state(StateIO &s) {
+    s.mark("M2B ");
+    // A link's board talks to other cabinets: only the one fitted with no link (kCommAlways) is saved.
+    bool comm = comm_board_ != nullptr;
+    s(comm);
+    if (comm != (comm_board_ != nullptr)) return s.fail("the save state was made with link play");
+#ifdef M2_DC_MEMORY
+    return s.fail("no save states on the Dreamcast");
+#else
+    for (auto *v : {&ram_, &work_, &cpuctl_, &backup_, &tile_, &chr_, &palette_, &xlat_, &tex0_, &tex1_, &luma_, &fb_a_, &fb_b_,
+                    &comm_, &crypt_ram_, &comp_ram_})
+        s.fixed(*v);
+    s(intreq_), s(intena_), s(lines_), s(timervals_), s(timer_start_), s(timer_due_), s(timer_orig_), s(timer_run_);
+    s(tick_base_), s(count_base_), s(videocontrol_), s(zclip_), s(render_mode_), s(render_test_), s(render_unk_);
+    s(comm_cn_), s(comm_fg_), s(frame_), s(comp_src_), s(comp_busy_);
+    s(uart_txrdy_), s(uart_shift_busy_), s(uart_have_hold_), s(uart_hold_), s(uart_out_), s(sound_total_);
+    uint64_t tex_generation = tex_generation_;
+    s(tex_generation);
+    if (s.loading()) tex_generation_ = std::max(tex_generation_, tex_generation) + 1; // texture RAM changed under any cache
+    if (comm_board_) {
+        comm_board_->state(s);
+        loopback_.state(s);
+    }
+    if (crypt_) crypt_->state(s);
+    s.mark("IO  ");
+    io_.state(s);
+    io5649_.state(s);
+    tgp_.state(s);
+    geo_->state(s);
+    video_->state(s);
+    if (s.loading() && s.ok()) {
+        if (kModel2b) luma_2b_to_dwords(luma_.data(), luma_dw_.data());
+#ifdef M2_FAST_BUS
+        fast_read_page_ = fast_write_page_ = ~0u;
+#endif
+    }
+#endif
+}
+
 void M2Board::set_open_frustum(float scale) { geo_->set_open_frustum(scale); }
 
 void M2Board::set_wide_margin(int pixels) {
@@ -412,9 +456,9 @@ void M2Board::uart_write_data(uint8_t v) {
     if (!uart_shift_busy_) {
         uart_shift_busy_ = true;
 #ifdef M2_FAST_GEN
-        ls_->add_callback(ls_->now() + 1, [this] { uart_shift_done(); }); // (now(): Lockstep::pending)
+        ls_->add_callback(ls_->now() + 1, [this] { uart_shift_done(); }, kUartTag); // (now(): Lockstep::pending)
 #else
-        ls_->add_callback(ls_->count + 1, [this] { uart_shift_done(); });
+        ls_->add_callback(ls_->count + 1, [this] { uart_shift_done(); }, kUartTag);
 #endif
     }
 }

@@ -58,6 +58,28 @@ Board::Board(Images img, const RomSet &set)
     cpu_.reset();
 }
 
+void Board::state(rt::StateIO &s) {
+    s.mark("M1B ");
+    cpu_.state(s);
+    s(env_.count), s(env_.limit), s(env_.irq_pending), s(env_.interpreted);
+    s(frame_), s(next_vblank_), s(stall_ticks_), s(target_), s(sound_done_), s(irq_status_), s(irq_mask_), s(last_irq_);
+    s(timer_period_), s(timer_val_), s(timer_due_), s(uart_phase_), s(uart_expect_mode_), s(uart_txen_), s(uart_full_);
+    s(uart_due_), s(uart_shift_end_);
+    mem_.state(s, *this);
+    copro_.state(s);
+    video_.state(s);
+    s.mark("M1IO");
+    bool io2 = io2_ != nullptr, dsb = dsb_ != nullptr;
+    s(io2), s(dsb);
+    if (io2 != (io2_ != nullptr) || dsb != (dsb_ != nullptr)) return s.fail("the save state's boards are another set's");
+    if (io2_) io2_->state(s);
+    else io_.state(s);
+    comm_.state(s);
+    sound_.state(s);
+    if (dsb_) dsb_->state(s);
+    s.mark("END ");
+}
+
 // The V60 waited for the TGP: its clock moves on, and the run stops on time.
 void Board::copro_waited() {
     stall_ticks_ += copro_.take_stall();

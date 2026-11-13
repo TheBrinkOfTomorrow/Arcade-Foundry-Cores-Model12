@@ -8,6 +8,6 @@ MODEL2A_ONLY_SETS = ('srallyc', 'manxttc', 'vcop2', 'vf2', 'motoraid', 'dynamcop
 MODEL2B_SETS = ('indy500', 'fvipers', 'sgt24h', 'overrevb', 'von', 'gunblade', 'vstriker', 'zerogun', 'pltkids', 'lastbrnx', 'schamp', 'dynabb97', 'rchase2', 'doab')
 MODEL2C_SETS = ('stcc', 'hotdo', 'waverunr', 'segawski', 'skisuprg', 'bel', 'topskatr')
 # Model 1 sets (cmake/model1.cmake): their own pipeline
-MODEL1_SETS = ('vr', 'swa', 'vf', 'wingwar')
+MODEL1_SETS = ('vr', 'vformula', 'swa', 'vf', 'wingwar')
 # Other names a set's archive may have (MAME's parent holding a clone's whole set)
-OTHER_NAMES = {'hotdo': ('hotd',), 'doab': ('doa',)}
+OTHER_NAMES = {'hotdo': ('hotd',), 'doab': ('doa',), 'vformula': ('vr',)}

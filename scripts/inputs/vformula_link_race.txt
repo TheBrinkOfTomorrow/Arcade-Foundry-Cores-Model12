@@ -1,0 +1,8 @@
+# Virtua Formula linked race (each cabinet, from vformula_link_master/slave's NVRAM): coin,
+# start, Beginner, a race to GAME OVER and back to attract. 9,000 frames.
+600-605 coin=1
+700-705 start=1
+950-9000 accel=0xff
+1300-1500 wheel=0x60
+1700-1800 wheel=0xb0
+2000-2005 vr2=1

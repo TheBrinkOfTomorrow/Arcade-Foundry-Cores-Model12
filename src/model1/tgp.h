@@ -17,6 +17,7 @@
 #pragma once
 
 #include "model1/replay_bus.h"
+#include "runtime/state_io.h"
 #include "runtime/tgp.h"
 
 #include <algorithm>
@@ -158,6 +159,7 @@ public:
     static constexpr uint64_t kSliceTicks = 80;
     void set_slice(uint64_t ticks) { slice_ = ticks ? ticks : 1; }
     // A board timer's tick (MAME's irq0 timer) ends a slice too.
+    void state(rt::StateIO &s); // save states
     void timer_tick(uint64_t t) { timer_sync_ = t; }
     // Another device's timers end slices too (Wing War's I/O board): the
     // last end at or before a time, both in attoseconds (0: none)

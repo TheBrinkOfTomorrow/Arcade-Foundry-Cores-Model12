@@ -1,0 +1,22 @@
+# Virtua Formula: test mode, GAME SYSTEM: CAR NUMBER No.8, LINK ID SLAVE, saved. 1,500 frames.
+300-309 test=1
+390-395 service=1
+436-441 service=1
+482-487 vr4=1
+548-553 vr1=1
+594-599 vr1=1
+640-645 vr1=1
+686-691 vr2=1
+732-737 vr1=1
+778-783 vr1=1
+824-829 vr3=1
+870-875 vr3=1
+916-921 vr1=1
+962-967 vr1=1
+1008-1013 vr1=1
+1054-1059 vr1=1
+1100-1105 vr1=1
+1146-1151 vr4=1
+1212-1217 vr1=1
+1258-1263 vr4=1
+1344-1349 vr4=1

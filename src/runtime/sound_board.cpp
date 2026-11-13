@@ -28,7 +28,7 @@ void M1SoundBoard::send(const uint8_t *bytes, size_t n) {
         const uint64_t at = std::max(line_free_, sched_.count) + kByteTime;
         line_free_ = at;
         const uint8_t b = bytes[i];
-        sched_.at(at, [this, b] { rx_arrive(b); });
+        sched_.at(at, event(kRxEvent, b), kRxEvent, b);
     }
 }
 
@@ -177,13 +177,50 @@ void M1SoundBoard::ymfm_set_timer(uint32_t tnum, int32_t duration_in_clocks) {
     const uint64_t due = base + uint64_t(duration_in_clocks);
     timer_due_clk_[tnum] = due;
     const uint64_t at = (due * ips_ + kYmClock - 1) / kYmClock;
-    sched_.at(at, [this, tnum, gen] {
-        if (timer_gen_[tnum] != gen) return; // re-armed or stopped since
-        render_fm_to(sched_.count);
-        in_timer_ = int(tnum);
-        m_engine->engine_timer_expired(tnum);
-        in_timer_ = -1;
-    });
+    sched_.at(at, event(kTimerEvent, tnum | gen << 8), kTimerEvent, tnum | gen << 8);
+}
+
+std::function<void()> M1SoundBoard::event(uint32_t tag, uint64_t arg) {
+    if (tag == kRxEvent) return [this, b = uint8_t(arg)] { rx_arrive(b); };
+    if (tag == kTimerEvent)
+        return [this, tnum = uint32_t(arg & 0xff), gen = arg >> 8] {
+            if (timer_gen_[tnum] != gen) return; // re-armed or stopped since
+            render_fm_to(sched_.count);
+            in_timer_ = int(tnum);
+            m_engine->engine_timer_expired(tnum);
+            in_timer_ = -1;
+        };
+    return nullptr;
+}
+
+void M1SoundBoard::state(rt::StateIO &s) {
+    s.mark("M1SB");
+    cpu_.state(s);
+    sched_.state(s, [this](uint32_t tag, uint64_t arg) { return event(tag, arg); });
+    s(carry_), s(expect_mode_), s(rx_enable_), s(rxrdy_), s(rx_hold_), s(errors_), s(line_free_), s(tx_free_), s(received_);
+    std::vector<double> tx_at;
+    std::vector<uint8_t> tx_byte;
+    for (const auto &[at, b] : tx_) tx_at.push_back(at), tx_byte.push_back(b);
+    s(tx_at), s(tx_byte);
+    if (s.loading() && s.ok()) {
+        if (tx_at.size() != tx_byte.size()) return s.fail("the save state's sound board is damaged");
+        tx_.clear();
+        for (size_t i = 0; i < tx_at.size(); ++i) tx_.emplace_back(tx_at[i], tx_byte[i]);
+    }
+    std::vector<uint8_t> ym;
+    if (s.saving()) {
+        ymfm::ymfm_saved_state saved(ym, true);
+        ym_.save_restore(saved);
+    }
+    s(ym);
+    if (s.loading() && s.ok()) {
+        ymfm::ymfm_saved_state saved(ym, false);
+        ym_.save_restore(saved);
+    }
+    s(fm_done_), s(timer_gen_), s(timer_due_clk_), s(in_timer_), s(fm_out_);
+    pcm1_.state(s);
+    pcm2_.state(s);
+    s(pcm_slot_), s(pcm_register_), s(pcm_done_), s(pcm_out_);
 }
 
 } // namespace snd

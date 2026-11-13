@@ -17,6 +17,24 @@ Dsb::Dsb(const std::vector<uint8_t> &program, std::vector<uint8_t> mpeg) : mpeg_
     decoder_ = std::make_unique<mpeg_audio>(mpeg_rom_.data(), mpeg_audio::L2, false, 0);
 }
 
+void Dsb::state(rt::StateIO &s) {
+    s.mark("DSB ");
+    rt::state_keeping(s, z_, [this](dsb::Z80 &z) { z.io = z_.io; });
+    rt::state_keeping(s, *decoder_, [this](mpeg_audio &d) { d.keep_rom(*decoder_); });
+    std::vector<uint64_t> at;
+    std::vector<uint8_t> bytes;
+    for (const auto &[t, b] : line_) at.push_back(t), bytes.push_back(b);
+    s(at), s(bytes);
+    if (s.loading() && s.ok()) {
+        if (at.size() != bytes.size()) return s.fail("the save state's sound board is damaged");
+        line_.clear();
+        for (size_t i = 0; i < at.size(); ++i) line_.emplace_back(at[i], bytes[i]);
+    }
+    s(rx_enable_), s(rxrdy_), s(overrun_), s(expect_mode_), s(configured_), s(rx_data_);
+    s(mp_start_), s(mp_end_), s(mp_vol_), s(mp_pan_), s(mp_state_), s(lp_start_), s(lp_end_), s(start_), s(end_);
+    s(mp_pos_), s(audio_pos_), s(audio_avail_), s(audio_buf_), s(next_update_), s(out_);
+}
+
 void Dsb::receive(uint8_t byte, double seconds) {
     line_.emplace_back(uint64_t(std::llround(seconds * double(kClock))), byte);
 }

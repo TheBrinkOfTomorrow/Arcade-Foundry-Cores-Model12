@@ -6,6 +6,7 @@
 
 #include "runtime/cpu.h"
 #include "runtime/m2_replay_bus.h"
+#include "runtime/state_io.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -56,7 +57,12 @@ public:
     // event at the same count (MAME's vblank handler parses the display list
     // before it raises the vblank line). Lockstep: call before the run
     // starts. Free run: callbacks may add further callbacks.
-    void add_callback(uint64_t at, std::function<void()> fn);
+    // tag: what the callback is (the owner's number for it), for save states;
+    // -1: one a save state can't hold (Lockstep runs).
+    void add_callback(uint64_t at, std::function<void()> fn, int tag = -1);
+    // Save states: the count, the counters and the events still to come; a
+    // callback is saved as its tag and made again on load by make(tag).
+    void state(StateIO &s, const std::function<std::function<void()>(int)> &make);
     // Free run: an interrupt line changed; take it at the next boundary.
 #ifdef M2_FAST_GEN
     // The rewritten generated code keeps the instructions it has run since
@@ -87,6 +93,7 @@ private:
         int a = 0, b = 0;
         uint32_t ip = 0;
         size_t fn = 0; // Call: index into calls_
+        int tag = -1;  // Call: add_callback's tag
     };
     std::vector<std::function<void()>> calls_;
     bool apply();

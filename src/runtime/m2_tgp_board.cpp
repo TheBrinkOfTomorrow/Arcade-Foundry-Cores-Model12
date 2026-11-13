@@ -15,6 +15,7 @@
 
 #include "af_debug.h"
 #include "runtime/m2_tgp_board.h"
+#include "runtime/state_io.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -94,6 +95,33 @@ TgpBoard::TgpBoard(const std::vector<uint8_t> &tables, RomSource &rom) : tables_
     for (auto &w : buffer_) w = 0x07800f0f;
 }
 #endif
+
+void TgpBoard::state(StateIO &s) {
+    s.mark("TGP ");
+#if M2_MODEL2B
+    state_keeping(s, *sharc_.m_core, [this](sharc::Sharc::sharc_internal_state &c) {
+        c.delayed_iop_timer = sharc_.m_core->delayed_iop_timer;
+    });
+    s(sharc_.count), s(sharc_.held), s(sharc_.m_boot_mode), s(sharc_.m_blocks), s(sharc_.m_dm_short_se);
+    s(coprocnt_), s(sharc_upload_);
+#elif M2_MODEL2C
+    s(tgpx4_.m_state), s(tgpx4_.count), s(tgpx4_.m_dataa), s(tgpx4_.m_datab);
+    s(coprocnt_), s(tgpx4_upload_);
+#else
+    state_keeping(s, tgp_, [this](Tgp &t) { // the TGP's registers and RAM; its pointers (bus, tables, FIFOs) stay
+        t.bus = tgp_.bus, t.tables = tgp_.tables, t.hook = tgp_.hook;
+#ifdef M2_FAST_TGP
+        t.in_fifo = tgp_.in_fifo, t.out_fifo = tgp_.out_fifo;
+#endif
+    });
+#endif
+#ifdef M2_FAST_TGP
+    in_.state(s), out_.state(s);
+#else
+    s(in_), s(out_);
+#endif
+    s(upload_), s(coproctl_), s(geoctl_), s(geo_write_start_), s(geo_read_start_), s(booted_), s(buffer_);
+}
 
 void TgpBoard::coproctl_w(uint32_t data, uint32_t mask) {
 #if M2_MODEL2B

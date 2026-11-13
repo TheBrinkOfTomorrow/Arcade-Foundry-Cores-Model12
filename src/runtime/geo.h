@@ -14,6 +14,7 @@
 
 #include "runtime/fast_paths.h"
 #include "runtime/rom_source.h"
+#include "runtime/state_io.h"
 
 #include <cstdint>
 #include <stdexcept>
@@ -240,6 +241,24 @@ public:
     // window command.
     void set_open_frustum(float scale) { open_frustum_ = scale; }
     float open_frustum() const { return open_frustum_; }
+    // Save states: the geometrizer's registers and RAM, and the last frame's
+    // polygons (shown again on a 30 Hz frame with no parse).
+    void state(StateIO &s) {
+        s.mark("GEO ");
+        state_keeping(s, raster_, [this](raster_state &r) {
+            r.texture_rom = raster_.texture_rom;
+#ifdef M2_DC_MEMORY
+            r.rom = raster_.rom;
+#endif
+        });
+        state_keeping(s, geo_, [this](geo_state &g) {
+            g.raster = geo_.raster, g.polygon_rom = geo_.polygon_rom;
+#ifdef M2_DC_MEMORY
+            g.rom = geo_.rom;
+#endif
+        });
+        s(compact_), s(polys), s(polys_dropped);
+    }
 
 private:
     int wide_margin_ = 0;

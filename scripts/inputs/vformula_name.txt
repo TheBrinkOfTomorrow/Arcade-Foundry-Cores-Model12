@@ -1,0 +1,20 @@
+# Virtua Formula seed harvest (pokes, so never a frame reference): Beginner, the time held
+# and the lap poked (scripts/m1_pokes.lua, M1POKE="0x50116c=1920@1600-6500:2;0x400eb5=4@6000-6000:1"):
+# 1st, GOAL, name entry with the wheel and buttons, the ranking. 12,000 frames.
+600-605 coin=1
+700-705 start=1
+950-7000 accel=0xff
+7350-7380 wheel=0xff
+7400-7405 vr1=1
+7420-7450 wheel=0x01
+7460-7465 start=1
+7480-7520 wheel=0xc0
+7540-7545 vr4=1
+7560-7600 wheel=0x40
+7620-7625 start=1
+7640-7645 vr2=1
+7660-7700 wheel=0xff
+7720-7725 vr3=1
+7740-7745 start=1
+7760-7765 start=1
+7780-7785 start=1

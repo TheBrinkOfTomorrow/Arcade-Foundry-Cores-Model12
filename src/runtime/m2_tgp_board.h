@@ -18,6 +18,7 @@
 #pragma once
 
 #include "runtime/rom_source.h"
+#include "runtime/state_io.h"
 #include "runtime/tgp.h"
 #if M2_MODEL2B
 #include "runtime/sharc/sharc_gen.h"
@@ -88,6 +89,7 @@ public:
     // Run the TGP until it waits on an empty input FIFO. The game polls the
     // TGP's mailbox in buffer RAM for results; the TGP must have caught up.
     void sync() { run_tgp(); }
+    void state(StateIO &s); // save states
 
     // The lockstep's oracle for the TGP's reads of external memory: when
     // the i960 writes buffer RAM where the TGP reads, the value read

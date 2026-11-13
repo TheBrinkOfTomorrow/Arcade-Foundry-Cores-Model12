@@ -32,7 +32,10 @@ class CommBoard {
 public:
     void set_transport(rt::LinkTransport *t) { transport_ = t; }
     // MAME's -comm_framesync: hold each cabinet to the master's frame.
-    void set_framesync(bool on) { framesync_ = on ? 1 : 0; }
+    void set_framesync(bool on, int slack = rt::link_slack()) {
+        framesync_ = on ? 1 : 0;
+        slack_ = slack;
+    }
 
     uint8_t share_r(uint32_t offset) const { return shared_[offset & 0xfff]; }
     void share_w(uint32_t offset, uint8_t data) { shared_[offset & 0xfff] = data; }
@@ -49,6 +52,10 @@ public:
     Link link() const;
     int id() const { return linkid_; }
     int count() const { return linkcount_; }
+    template <typename S> void state(S &s) { // save states (no link: a link isn't saved)
+        s(shared_), s(zfg_), s(cn_), s(fg_), s(framesync_), s(linkenable_), s(linkalive_), s(linkid_), s(linkcount_);
+        s(linktimer_), s(slack_), s(outstanding_), s(buffer0_), s(rx_);
+    }
 
 private:
     uint8_t shared_[0x1000] = {};
@@ -56,6 +63,8 @@ private:
     uint8_t zfg_ = 0, cn_ = 0, fg_ = 0, framesync_ = 0;
     uint8_t linkenable_ = 0, linkalive_ = 0, linkid_ = 0, linkcount_ = 0;
     uint16_t linktimer_ = 0;
+    int slack_ = 0;       // frames the master may run ahead (set_framesync)
+    int outstanding_ = 0; // the master's vsyncs not yet back round the ring
     uint8_t buffer0_[0x200] = {};
     std::vector<uint8_t> rx_; // bytes received toward the next whole frame
     void comm_tick();
@@ -63,6 +72,7 @@ private:
     void send_data(uint8_t frame_type, int frame_start, int frame_size, int data_size);
     void send_frame(int data_size);
     void lost();
+    bool held(bool is_master) const;
 };
 
 } // namespace m1

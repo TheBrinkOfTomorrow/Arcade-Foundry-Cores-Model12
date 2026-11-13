@@ -190,7 +190,7 @@ def main():
     build_cmd = ["cmake", "--build", build, "--config", args.config]
     # the build directory is for one ROM set (CMake's M2_ROMSET)
     run(["cmake", "-S", ".", "-B", build, "-DCMAKE_BUILD_TYPE=" + args.config, "-DM2_ROMSET=" + args.set,
-         "-DM2_CORE=" + ("ON" if args.core else "OFF"), "-DM2_APP=" + ("OFF" if args.gen_only else "ON")])
+         "-DM2_CORE=" + ("ON" if args.core else "OFF"), "-DM2_APP=" + ("OFF" if args.gen_only or args.core else "ON")])  # a core needs no SDL (#46)
     samples = "samples.bin" if args.set in MODEL2A_SETS else "pcm1.bin"  # SCSP or MultiPCM sound board
     # Manx TT: its Model 1 sound board's ROMs are read from the parent set beside the ROM set
     m1_new = args.set in M1SND_SETS and not os.path.exists(os.path.join(cache, "m1_program.bin")) and any(

@@ -4,8 +4,9 @@
 // MAME's m1comm_device (M1COMM_SIMULATION), transplanted: see comm_board.h.
 // Changes: the sockets are a non-blocking rt::LinkTransport, so read_frame
 // keeps partial frames until whole instead of waiting; the frame-sync wait
-// gives up after kSyncTimeout (MAME waits forever); messages through
-// osd_printf_verbose are dropped.
+// gives up after kSyncTimeout (MAME waits forever), and the master may run
+// up to slack_ frames ahead of its vsync (rt::link_slack; MAME: none);
+// messages through osd_printf_verbose are dropped.
 
 #include "model1/comm_board.h"
 
@@ -40,6 +41,7 @@ void CommBoard::cn_w(uint8_t data) {
         linkalive_ = 0x00;
         linkcount_ = 0x00;
         linktimer_ = 0x00e8; // 58 fps * 4s
+        outstanding_ = 0;
         rx_.clear();
     }
 }
@@ -47,7 +49,18 @@ void CommBoard::cn_w(uint8_t data) {
 void CommBoard::lost() {
     linkalive_ = 0x02;
     linktimer_ = 0x00;
+    outstanding_ = 0;
     shared_[0] = 0xff;
+}
+
+// Whether this frame still waits on the ring. A slave (or relay) waits for
+// a vsync from the master (when several came, it takes them all, so a slave
+// held up by a slow hop catches up). The master waits only while more than
+// slack_ of its vsyncs are still on their way round: with slack 0, a lap
+// every frame, as in MAME.
+bool CommBoard::held(bool is_master) const {
+    if (is_master) return framesync_ && outstanding_ > slack_;
+    return linktimer_ == 0x01;
 }
 
 void CommBoard::comm_tick() {
@@ -172,11 +185,14 @@ void CommBoard::comm_tick() {
                     }
                 } else {
                     if (idx == 0xfc) {
-                        // 0xFC - VSYNC
-                        linktimer_ = 0x00;
-                        if (!is_master)
-                            // forward message to other nodes
+                        // 0xFC - VSYNC: back at the master after a lap; a
+                        // slave takes it and passes it on
+                        if (is_master) {
+                            if (outstanding_ > 0) outstanding_--;
+                        } else {
+                            linktimer_ = 0x00;
                             send_frame(data_size);
+                        }
                     }
                     if (idx == 0xfd) {
                         // 0xFD - master addional bytes
@@ -194,12 +210,12 @@ void CommBoard::comm_tick() {
                 // try to read another message
                 recv = read_frame(data_size);
             }
-            if (linktimer_ == 0x01) {
+            if (held(is_master)) {
                 if (std::chrono::steady_clock::now() > deadline) { lost(); break; } // MAME waits forever
                 std::this_thread::yield();
-                transport_->poll();
+                if (transport_) transport_->poll();
             }
-        } while (linktimer_ == 0x01);
+        } while (held(is_master));
 
         if (linkalive_ != 0x01) return;
 
@@ -226,6 +242,7 @@ void CommBoard::comm_tick() {
                 buffer0_[0] = 0xfc;
                 buffer0_[1] = 0x01;
                 send_frame(data_size);
+                if (framesync_) outstanding_++;
             }
         }
 

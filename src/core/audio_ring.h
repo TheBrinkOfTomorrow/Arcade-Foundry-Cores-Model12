@@ -49,6 +49,7 @@ public:
         return n;
     }
     size_t size() const { return size_; }
+    void clear() { start_ = size_ = 0; }
 
 private:
     std::vector<float> buf_;

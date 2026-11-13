@@ -1,0 +1,29 @@
+# Virtua Formula: a coin, start, Big Forest (Beginner, automatic) chosen with the
+# accelerator, then vr_game's race: steering, braking, gear presses, every view
+# button. The time runs out (16th), GAME OVER, ranking, back to attract by 7,500.
+# 8,000 frames.
+600-605 coin=1
+700-705 start=1
+760-790 wheel=0xc0
+1000-6400 accel=0xff
+1300-1500 wheel=0x60
+1700-1800 wheel=0xb0
+2100-2400 wheel=0x40
+2600-2700 wheel=0xd0
+3000-3050 brake=0xff
+3000-3050 accel=0x01
+3300-3600 wheel=0x70
+3900-4100 wheel=0xa0
+4400-4500 wheel=0x30
+4800-5000 wheel=0xc8
+5300-5400 wheel=0x58
+1200-1205 shiftup=1
+1400-1405 shiftup=1
+1600-1605 shiftup=1
+3060-3065 shiftdown=1
+3200-3205 shiftup=1
+2000-2005 vr1=1
+2500-2505 vr2=1
+3500-3505 vr3=1
+4200-4205 vr4=1
+4700-4705 vr1=1

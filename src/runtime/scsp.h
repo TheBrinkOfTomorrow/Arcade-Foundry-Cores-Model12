@@ -8,6 +8,8 @@
 // expression.
 #pragma once
 
+#include "runtime/state_io.h"
+
 #include <cstdint>
 #include <functional>
 #include <vector>
@@ -53,6 +55,7 @@ public:
     // now (replacing an armed one); the board calls timer_expired(n) then.
     std::function<void(int, double)> on_timer;
     void timer_expired(int n);
+    void state(rt::StateIO &s); // save states
 
 private:
     enum EgState { ATTACK, DECAY1, DECAY2, RELEASE };

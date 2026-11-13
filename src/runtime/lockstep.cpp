@@ -114,10 +114,11 @@ bool Lockstep::apply() {
     return core_.m_IP != ip_before;
 }
 
-void Lockstep::add_callback(uint64_t at, std::function<void()> fn) {
+void Lockstep::add_callback(uint64_t at, std::function<void()> fn, int tag) {
     Event e{};
     e.kind = Event::Call;
     e.count = at;
+    e.tag = tag;
 #if defined(M2_DC_MEMORY) || defined(M2_FAST_GEN)
     if (!free_calls_.empty()) {
         e.fn = free_calls_.back();
@@ -136,6 +137,51 @@ void Lockstep::add_callback(uint64_t at, std::function<void()> fn) {
     while (it != log_.end() && it->count < at) ++it;
     log_.insert(it, e);
     refresh_next();
+}
+
+void Lockstep::state(StateIO &s, const std::function<std::function<void()>(int)> &make) {
+    s.mark("LOCK");
+    if (!free_run_) return s.fail("no save states in a lockstep run");
+    s(count), s(end_count), s(next_count), s(poked_), s(taken_);
+#ifdef M2_FAST_GEN
+    s(pending), s(epoch);
+#endif
+    struct Saved {
+        int32_t kind, a, b, tag;
+        uint64_t count;
+        uint32_t ip;
+    };
+    std::vector<Saved> events;
+    if (s.saving()) {
+        for (size_t i = next_; i < log_.size(); ++i) {
+            const Event &e = log_[i];
+            if (e.kind == Event::Call && e.tag < 0) return s.fail("a board event a save state can't hold");
+            events.push_back({int32_t(e.kind), e.a, e.b, e.tag, e.count, e.ip});
+        }
+    }
+    s(events);
+    if (s.saving() || !s.ok()) return;
+    log_.clear();
+    calls_.clear();
+    next_ = 0;
+#if defined(M2_DC_MEMORY) || defined(M2_FAST_GEN)
+    free_calls_.clear();
+#endif
+    for (const Saved &v : events) {
+        Event e{};
+        e.kind = Event::Kind(v.kind);
+        e.count = v.count, e.a = v.a, e.b = v.b, e.ip = v.ip, e.tag = v.tag;
+        if (e.kind == Event::Call) {
+            std::function<void()> fn = make(v.tag);
+            if (!fn) return s.fail("a board event this build doesn't have");
+            e.fn = calls_.size();
+            calls_.push_back(std::move(fn));
+        }
+        log_.push_back(e);
+    }
+#ifdef M2_FAST_GEN
+    ++epoch; // the generated code checks in full at its next instruction
+#endif
 }
 
 void Lockstep::on_take(void *ctx, int vector, uint32_t ip, bool pending) {

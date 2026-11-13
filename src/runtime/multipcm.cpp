@@ -368,4 +368,16 @@ void MultiPcm::generate(float *left, float *right, int n) {
     }
 }
 
+void MultiPcm::state(rt::StateIO &s) {
+    s.mark("MPCM");
+    for (Slot &slot : slots_) {
+        Slot copy = slot;
+        s(copy);
+        s.inner(this, copy.pitch_lfo.table), s.inner(this, copy.pitch_lfo.scale);
+        s.inner(this, copy.amplitude_lfo.table), s.inner(this, copy.amplitude_lfo.scale);
+        if (s.loading() && s.ok()) slot = copy;
+    }
+    s(bank_), s(cur_slot_), s(address_);
+}
+
 } // namespace snd

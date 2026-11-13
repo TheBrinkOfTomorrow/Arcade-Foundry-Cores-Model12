@@ -13,6 +13,7 @@
 #pragma once
 
 #include "runtime/raster.h"
+#include "runtime/state_io.h"
 #include "runtime/video_profile.h"
 
 #include <algorithm>
@@ -195,6 +196,11 @@ public:
     // (width() x H); front_layer(): the front tilemaps (W x H rows, 0 =
     // see-through). Off by default; on, the screen is unchanged.
     void set_keep_layers(bool on) { keep_layers_ = on; }
+
+    // Save states: the pens, the CRTC offsets and the screen as shown. On
+    // load every cache is built again from the board's RAM (a new instance(),
+    // so a GPU renderer uploads everything); the front end's settings stay.
+    void state(StateIO &s);
     const std::vector<uint32_t> &back_layer() const { return back_layer_; }
     const std::vector<uint32_t> &front_layer() const { return sys24_; }
 

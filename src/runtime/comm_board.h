@@ -22,11 +22,28 @@
 #pragma once
 
 #include <algorithm>
+#include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <deque>
 #include <vector>
 
 namespace rt {
+
+// Lockstep's slack: with frame sync on, how many frames the master may run
+// ahead of the sync token (vsync) it sent coming back round the ring. 0 is
+// MAME's -comm_framesync, a whole lap of the ring every frame: on Wi-Fi a lap
+// often takes longer than a frame, so every cabinet slows and stutters. With
+// slack, a slow lap only delays what the cabinets see of each other by up to
+// that many frames. AF_LINK_SLACK overrides it (0 for MAME's).
+constexpr int kDefaultLinkSlack = 4;
+inline int link_slack() {
+    static const int slack = [] {
+        const char *s = std::getenv("AF_LINK_SLACK");
+        return s && *s ? std::clamp(std::atoi(s), 0, 60) : kDefaultLinkSlack;
+    }();
+    return slack;
+}
 
 // The two cables: to the next cabinet and from the one before. Non-blocking.
 class LinkTransport {
@@ -58,6 +75,8 @@ public:
         return true;
     }
 
+    template <typename S> void state(S &s) { s(q_); } // save states
+
 private:
     std::deque<uint8_t> q_;
 };
@@ -68,9 +87,13 @@ public:
     // received block a frame lands (0x1c0 for most games).
     explicit CommBoard(uint8_t *shared, uint16_t frame_offset = 0x1c0) : shared_(shared), frame_offset_(frame_offset) {}
     void set_transport(LinkTransport *t) { transport_ = t; }
-    // Hold each cabinet to the master's frame (MAME's -comm_framesync); off
-    // by default, as in MAME: cabinets run free and exchange data as it comes.
-    void set_framesync(bool on) { framesync_ = on ? 1 : 0; }
+    // Hold each cabinet to the master's frame (MAME's -comm_framesync), within
+    // `slack` frames (link_slack); off by default, as in MAME: cabinets run
+    // free and exchange data as it comes.
+    void set_framesync(bool on, int slack = link_slack()) {
+        framesync_ = on ? 1 : 0;
+        slack_ = slack;
+    }
 
     uint8_t cn_r() const { return uint8_t(cn_ | 0xfe); }
     void cn_w(uint8_t data);
@@ -83,6 +106,11 @@ public:
     Link link() const;
     int id() const { return linkid_; }
     int count() const { return linkcount_; }
+    // Save states (the loopback board only: a link isn't saved).
+    template <typename S> void state(S &s) {
+        s(zfg_), s(cn_), s(fg_), s(framesync_), s(linkenable_), s(linkalive_), s(linkid_), s(linkcount_), s(zfg_delay_);
+        s(linktimer_), s(slack_), s(outstanding_), s(buffer0_), s(rx_);
+    }
 
 private:
     uint8_t *shared_;
@@ -91,6 +119,8 @@ private:
     uint8_t zfg_ = 0, cn_ = 0, fg_ = 0, framesync_ = 0;
     uint8_t linkenable_ = 0, linkalive_ = 0, linkid_ = 0, linkcount_ = 0, zfg_delay_ = 0;
     uint16_t linktimer_ = 0;
+    int slack_ = 0;       // frames the master may run ahead (set_framesync)
+    int outstanding_ = 0; // the master's vsyncs not yet back round the ring
     uint8_t buffer0_[0x1000] = {};
     std::vector<uint8_t> rx_; // bytes received toward the next whole frame
     void comm_tick();
@@ -99,6 +129,7 @@ private:
     void send_data(uint8_t frame_type, int frame_start, int frame_size, int data_size);
     void send_frame(int data_size);
     void lost();
+    bool held(bool is_master) const;
 };
 
 } // namespace rt

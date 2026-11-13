@@ -88,6 +88,11 @@ struct Cpu68k {
 
     // Reset: SSP and PC from the vector table, supervisor, mask 7.
     void reset();
+    // Save states: registers and work RAM (the ROMs and devices stay).
+    template <typename S> void state(S &s) {
+        s(d), s(a), s(other_sp), s(pc), s(x), s(n), s(z), s(v), s(c), s(sys), s(irq_line);
+        s.fixed(ram);
+    }
 
     uint16_t sr() const { return uint16_t(sys | (x << 4) | (n << 3) | (z << 2) | (v << 1) | c); }
     void set_ccr(uint32_t v8) { x = (v8 >> 4) & 1; n = (v8 >> 3) & 1; z = (v8 >> 2) & 1; v = (v8 >> 1) & 1; c = v8 & 1; }

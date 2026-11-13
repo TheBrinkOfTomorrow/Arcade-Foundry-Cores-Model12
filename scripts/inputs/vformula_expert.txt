@@ -1,0 +1,21 @@
+# Virtua Formula seed harvest (pokes): Acropolis (Expert), automatic, view buttons;
+# M1POKE="0x50116c=1920@1600-99999:2;0x400eb5=4@1700-1700:1": it finishes, name entry. 12,000 frames.
+600-605 coin=1
+700-705 start=1
+720-990 wheel=0xd0
+950-20000 accel=0xff
+1100-1105 shiftup=1
+1200-1205 shiftup=1
+1300-1305 shiftup=1
+1400-1405 shiftup=1
+1500-1505 shiftup=1
+1600-1605 shiftup=1
+2500-2505 shiftdown=1
+2600-2605 shiftdown=1
+2700-2705 shiftup=1
+3000-3005 vr2=1
+3500-3505 vr3=1
+4000-4005 vr4=1
+4500-4505 vr1=1
+2000-2100 wheel=0x60
+3000-3100 wheel=0xa0

@@ -34,6 +34,13 @@ public:
     // maincpu: the 32 MiB region from rom_set (program ROMs and data ROM banks)
     explicit Memory(std::vector<uint8_t> maincpu);
     void map(v60::Bus &bus);
+    // Save states: the RAM regions and the data ROM bank (mapped again on load).
+    template <typename S> void state(S &s, v60::Bus &bus) {
+        for (auto &r : regions_) s.fixed(r);
+        s(bank_);
+        if (s.loading() && s.ok())
+            for (int p = 0x10; p <= 0x1f; p++) bus.rd[p] = rom_.data() + bank_ + ((p - 0x10) << 16);
+    }
     // E00004 (bank_w): data ROM bank at 100000-1fffff
     void bank_write(v60::Bus &bus, uint32_t data);
     // RAM at a V60 address; each region is contiguous host memory

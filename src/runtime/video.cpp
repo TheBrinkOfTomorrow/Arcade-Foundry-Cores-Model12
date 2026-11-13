@@ -1129,6 +1129,42 @@ void Video::set_wide_margin(int margin) {
     render_done_ = false; // redraw the 3D layer at the new width
 }
 
+void Video::state(StateIO &s) {
+    s.mark("VID ");
+    std::vector<uint32_t> pens(pens_, pens_ + 8192), screen = screen_;
+    int32_t regs[4] = {crtc_x_, crtc_y_, render_x_, render_y_};
+    bool palette_dirty = palette_dirty_, hud_on = hud_on_;
+    s(pens), s(regs), s(palette_dirty), s(hud_on), s(screen);
+    if (s.saving() || !s.ok()) return;
+    if (pens.size() != 8192) return s.fail("the save state's palette is another build's");
+
+    Video fresh(tile_ram_, char_ram_);
+    fresh.set_external_3d(external_3d_, desktop_);
+    fresh.set_wide_margin(margin_);
+    fresh.set_stretch_backdrop(stretch_backdrop_);
+    fresh.hud_edges_ = hud_edges_;
+    fresh.gpu_background_ = gpu_background_;
+#ifdef M2_DC_SPEED
+    fresh.scroll_allowed_ = scroll_allowed_;
+#endif
+    fresh.keep_layers_ = keep_layers_;
+    fresh.write_tracking_ = write_tracking_;
+    fresh.profile_clock_ = profile_clock_;
+    Raster raster = std::move(raster_); // its threads and size, as the front end set them
+    *this = std::move(fresh);
+    raster_ = std::move(raster);
+
+    std::copy(pens.begin(), pens.end(), pens_);
+#ifdef M2_DC_SPEED
+    for (uint32_t n = 0; n < 8192; n++) pens565_[n] = rgb565(pens_[n]), pens1555_[n] = argb1555(pens_[n]);
+#endif
+    crtc_x_ = regs[0], crtc_y_ = regs[1], render_x_ = regs[2], render_y_ = regs[3];
+    palette_dirty_ = palette_dirty;
+    hud_on_ = hud_on && hud_edges_;
+    set_raster_hud_moves();
+    if (screen.size() == screen_.size()) screen_ = std::move(screen);
+}
+
 uint64_t Video::screen_hash() const {
     uint64_t h = 0xcbf29ce484222325ULL;
     for (uint32_t px : screen_)

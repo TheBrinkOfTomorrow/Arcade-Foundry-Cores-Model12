@@ -14,6 +14,7 @@
 
 #include "model1/mpeg_audio.h"
 #include "runtime/dsb2_gen_support.h"
+#include "runtime/state_io.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -48,12 +49,15 @@ public:
     // writes, timed in seconds ("0.123456 R c00001 01", "0.123457 W e00003 14"),
     // as the m2trace plugin's M2TRACE_DSBLOG logs MAME's.
     void set_log(std::FILE *log) { log_ = log; }
+    void state(rt::StateIO &s); // save states
 
     // Devices (the 68000's view: its odd-byte devices)
     uint8_t read(uint32_t addr) override;
     void write(uint32_t addr, uint16_t data) override;
 
 private:
+    enum : uint32_t { kTickEvent = 1, kStreamEvent = 2, kByteEvent = 3 }; // Sched tags
+    std::function<void()> event(uint32_t tag, uint64_t arg);
     void deliver(uint8_t byte);
     void update_irq();
     void tick_1khz();

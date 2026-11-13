@@ -4,8 +4,9 @@
 // MAME's m2comm_device (M2COMM_SIMULATION), transplanted: see comm_board.h.
 // Changes: the sockets are a non-blocking LinkTransport, so read_frame keeps
 // partial frames until whole instead of waiting; the frame-sync wait gives up
-// after kSyncTimeout (MAME waits forever); messages through osd_printf_verbose
-// are dropped.
+// after kSyncTimeout (MAME waits forever), and the master may run up to
+// slack_ frames ahead of its vsync (link_slack in comm_board.h; MAME: none);
+// messages through osd_printf_verbose are dropped.
 
 #include "runtime/comm_board.h"
 
@@ -42,6 +43,7 @@ void CommBoard::cn_w(uint8_t data) {
         linkalive_ = 0x00;
         linkcount_ = 0x00;
         linktimer_ = 0x00e8; // 58 fps * 4s
+        outstanding_ = 0;
         rx_.clear();
 
         // zero memory
@@ -71,6 +73,17 @@ void CommBoard::vblank() { comm_tick(); }
 void CommBoard::lost() {
     linkalive_ = 0x02;
     linktimer_ = 0x00;
+    outstanding_ = 0;
+}
+
+// Whether this frame still waits on the ring. A slave (or relay) waits for
+// a vsync from the master (when several came, it takes them all, so a slave
+// held up by a slow hop catches up). The master waits only while more than
+// slack_ of its vsyncs are still on their way round: with slack 0, a lap
+// every frame, as in MAME.
+bool CommBoard::held(bool is_master) const {
+    if (is_master) return framesync_ && outstanding_ > slack_;
+    return linktimer_ == 0x01;
 }
 
 void CommBoard::comm_tick() {
@@ -202,21 +215,25 @@ void CommBoard::comm_tick() {
                     if (is_slave) send_data(linkid_, frame_start, frame_size, data_size);
                     else if (is_relay) send_frame(data_size);
                 } else if (idx == 0xfc) {
-                    // 0xFC - VSYNC
-                    linktimer_ = 0x00;
-                    // forward message to other nodes
-                    if (!is_master) send_frame(data_size);
+                    // 0xFC - VSYNC: back at the master after a lap; a
+                    // slave takes it and passes it on
+                    if (is_master) {
+                        if (outstanding_ > 0) outstanding_--;
+                    } else {
+                        linktimer_ = 0x00;
+                        send_frame(data_size);
+                    }
                 }
 
                 // try to read another message
                 recv = read_frame(data_size);
             }
-            if (linktimer_ == 0x01) {
+            if (held(is_master)) {
                 if (std::chrono::steady_clock::now() > deadline) { lost(); break; } // MAME waits forever
                 std::this_thread::yield();
                 transport_->poll();
             }
-        } while (linktimer_ == 0x01);
+        } while (held(is_master));
 
         if (linkalive_ != 0x01) return;
 
@@ -231,6 +248,7 @@ void CommBoard::comm_tick() {
             buffer0_[0] = 0xfc;
             buffer0_[1] = 0x01;
             send_frame(data_size);
+            if (framesync_) outstanding_++;
         }
 
         zfg_delay_ = 0x02;
@@ -263,17 +281,21 @@ void CommBoard::read_fg() {
                 if (is_slave) send_data(linkid_, frame_start, frame_size, data_size);
                 else if (is_relay) send_frame(data_size);
             } else if (idx == 0xfc) {
-                linktimer_ = 0x00;
-                if (!is_master) send_frame(data_size);
+                if (is_master) {
+                    if (outstanding_ > 0) outstanding_--;
+                } else {
+                    linktimer_ = 0x00;
+                    send_frame(data_size);
+                }
             }
             recv = read_frame(data_size);
         }
-        if (linktimer_ == 0x01) {
+        if (held(is_master)) {
             if (std::chrono::steady_clock::now() > deadline) { lost(); break; }
             std::this_thread::yield();
             transport_->poll();
         }
-    } while (linktimer_ == 0x01);
+    } while (held(is_master));
 }
 
 // One whole frame into buffer0_: data_size, or 0 while it is not all here

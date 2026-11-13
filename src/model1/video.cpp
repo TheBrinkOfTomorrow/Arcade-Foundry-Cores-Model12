@@ -898,6 +898,13 @@ int Video::get_list_number() {
     return listctl_[0] & 0x40 ? 0 : 1;
 }
 
+void Video::state(rt::StateIO &s) {
+    s.mark("M1VD");
+    s(*view_), s.fixed(poly_ram_), s.fixed(tgp_ram_), s(listctl_), s(render_done_), s(list_base_), s(frame_), s(pass_);
+    s.fixed(screen_);
+    if (s.loading()) layers_valid_ = false;
+}
+
 void Video::end_frame(uint64_t frame) {
     if ((listctl_[0] & 4) && (frame & 1)) listctl_[0] ^= 0x40;
 }

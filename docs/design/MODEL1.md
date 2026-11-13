@@ -17,12 +17,13 @@ the user's own MAME ROM sets, one core per set, the app's controls.
 | Set | Game | Controls | Extra boards |
 |---|---|---|---|
 | vr | Virtua Racing | wheel, pedals, 4 view buttons, shifter | link board |
+| vformula | Virtua Formula | as Virtua Racing | link board (simulated, so its own Z80 program epr-15624.17 is not loaded); no motion seats or camera feeds |
 | swa | Star Wars Arcade | flight stick | Digital Sound Board |
 | vf | Virtua Fighter | two players, three buttons and a stick | I/O board with the B BIOS |
 | wingwar | Wing War | flight stick, throttle | model1io2 I/O board (its Z80 runs) |
 
 In scope: attract, play, test mode, sound, the operator settings and high
-scores, link play (Virtua Racing), and the app's library and controls on
+scores, link play (Virtua Racing, Virtua Formula), and the app's library and controls on
 every platform, and stereo views for VR headsets and 3D displays
 (`src/model1/stereo.cpp`, the same idea as Model 2's).
 
@@ -124,7 +125,13 @@ list's colour and object uploads, and the double buffer flips.
   game's traffic; the Z80 and its BIOS are not run. At reset the settings
   EEPROM is in bytes 0x100-0x17f. Command 1 at byte 0x20 latches the ADC
   (bytes 0-7) and the switches (8-14); 2 and 3 store and load the EEPROM.
-  Byte 0x11 is the drive board's command.
+  Byte 0x11 is the drive board's command. Timed (as the core runs it), a
+  latch clears 7.5 ms after the game writes it and a store 35.6 ms after;
+  the data is there at once. Measured under MAME by the game's polls (2026-11-08):
+  a game polls a latch only in test mode and after it (Virtua Formula:
+  6,412 and 7,066 polls, 7.49 and 7.51 ms, the BIOS loop's phase not
+  modelled), and a store on a blank EEPROM's first boot or a test-mode save
+  (33,539 polls, 35.6 ms; the save 33,778).
 - **EPR-14869B (Virtua Fighter).** The B BIOS's timing is visible to the
   game, so `RomSet::io_bios_b` switches `IoBoard` to a timed model of its
   Z80 loop, each byte landing on the dual-port RAM at the time MAME's Z80
@@ -170,13 +177,22 @@ What makes the time MAME's:
   Virtua Fighter's 128 us tick. Each tick ends a slice.
 - **Interrupts.** MAME checks for one after every V60 instruction, so the
   generated code returns as soon as one is pending and enabled.
-- **The I/O board's wait state** and its BIOS start-up: under MAME the
-  game's first command completes 2,507,400 cycles after reset, about nine
-  frames in.
+- **The I/O board's wait state** and its BIOS start-up. Believed until
+  2026-11-08: the game's first command completes 2,507,400 cycles after
+  reset, about nine frames in (measured on Virtua Racing's boot). It holds
+  only for a game that writes its first command at that boot's time. MAME's
+  polls of the first command (Virtua Racing 36,307; Virtua Formula 36,166
+  from a blank NVRAM, 36,109 from a saved one, where the game writes it
+  2.07 ms sooner) put the three ready times 1 and 8 passes of 267 us apart:
+  the BIOS takes the command at its next main-loop pass and completes it
+  3,067,035 ticks (38.3 ms) later (`IoBoard::kPass`, `kPassPhase`,
+  `kReadyAfter`; the phase is the middle of the 57 us window the three
+  writes leave). A boot from saved NVRAM was a frame late against MAME
+  before; it is now identical.
 
 With them, `m1run` free-running matches MAME's screens: Virtua Racing's 30
 s of attract, 1,725 of 1,725 identical, and its scripted race, 7,000 of
-7,000.
+7,000; Virtua Formula's in the section below.
 
 ### Link play
 
@@ -191,6 +207,9 @@ LINK, LIVE, SLAVE, MASTER), saved in the I/O board's EEPROM. Two cabinets
 show MAME's screens up to the frame the link comes up, then race each other
 as two linked MAMEs do; after that the link's timing is the host's. Virtua
 Racing is tested with two cabinets in the app and four in `m1run`.
+With frame sync on, the master may run up to `rt::link_slack` frames ahead
+of its vsync coming back round the ring (cores 1.3.0; see MODEL2.md, Link
+play).
 
 ### The core library
 
@@ -201,6 +220,30 @@ Controls: the wheel and pedals 0x01-0xff, `AFCORE_SHIFT_UP` /
 `AFCORE_SHIFT_DOWN`, or a change of `afcore_input.gear` held for four
 frames as a shift; the flight stick and throttle for Star Wars Arcade and
 Wing War; two players' buttons and sticks for Virtua Fighter.
+
+### Save states
+
+afcore 5.4's `state_size`, `save_state` and `load_state`, as on Model 2
+(MODEL2.md, Save states: the same `rt::StateIO` pass and
+`tests/save_state_check.sh`, with `m1coreshot`). `m1::Board::state` saves,
+between frames: the V60's registers and flags (the rest of `v60::Core` is
+an instruction's scratch); the board's clock (instructions and TGP stall
+ticks), interrupt controller, timers and UART; the RAM regions and the data
+ROM bank, mapped again on load; the TGP with its FIFOs, RAM and timing; the
+video's view (light parameters, viewport, matrices), its object and colour
+RAMs, list control and the screen as shown (the tile layers are built again
+from tile and character RAM); the I/O board, or Wing War's with its Z80,
+CTC and 93C46; the comm board with no link; the sound board (shared with
+Model 2's original board) and Star Wars Arcade's DSB. The core adds its own
+gear state (the last gear asked for and a shift under way) in an `AFM1`
+chunk beside the board's `M1  `. No states during link play.
+
+Checked on 11 Nov 2026 on an M4 Pro (64 GB, macOS, arm64), with
+`tests/save_state_check.sh BUILD SET 1500 2100` at 7098557 (the code merged
+as 2bf51c6). vr, swa, vf and wingwar each gave the same screen and sound on
+every one of the 600 frames after the save, both in the run that saved and in
+the run that loaded. A state is about 20 MB raw (vr 20,435,954 bytes, swa
+20,535,404, vf 20,435,437, wingwar 20,501,040).
 
 ## Data and settings
 
@@ -227,6 +270,8 @@ TGP's `__int128` (clang-cl works).
 - **The sound CPU** is held to MAME's log by `m1sndcheck` (patch 0003),
   the Digital Sound Board by `dsbcheck` (120 s: all 10,669 reads and writes
   MAME's, within 45 us), Wing War's I/O board by `m1io2check`.
+- **Save states** as for Model 2 (`tests/save_state_check.sh` with an
+  `M1_CORE` build).
 - **Regressions, unit tests and CI** as for Model 2.
 
 | Tool | Checks |
@@ -259,3 +304,80 @@ TGP's `__int128` (clang-cl works).
 - **Run Wing War's I/O Z80, model the others.** Its board's behaviour is
   too timing-dependent to model from traffic; the others are simple
   enough.
+
+## Virtua Formula
+
+Sega's 1993 attraction version of Virtua Racing (MAME's `vformula`, a clone of
+`vr`): up to eight linked sit-down cockpits on motion bases, with camera feeds
+to the venue's screens. Its own program ROMs (epr-15638/15639 at 0x200000,
+epr-15623 at 0xfc0000, epr-15622 at 0xfe0000, epr-15641/15640 at 0x1000000)
+replace vr's; graphics, TGP, polygon and sound ROMs are vr's, read from the
+merged `vr.7z`/`vr.zip` (games.toml `other_names`). epr-15624.17 is the comm
+board's Z80 program (MAME loads it as the M1COMM BIOS `epr15624`; vr's is
+`epr15112`). The comm board is simulated (`src/model1/comm_board.h`), so it is
+not loaded. MAME emulates neither the motion seats nor the camera switching,
+and neither does this core: the game boots, races, links and runs its test
+mode without them (the input test shows EMERGENCY-SW and the CCD inputs as off).
+
+Seeds: `seeds/vformula.txt`, 282 entries, `m1recomp --reduce` over MAME
+harvests (`M1TRACE_PCS`) merged with the 138 the fallback interpreter had
+logged before there was a MAME: attract (9,000 frames), a race to GAME OVER
+(`scripts/inputs/vformula_game.txt`) and with the manual gearbox
+(`vformula_manual.txt`), every test menu (`vformula_test.txt`), TGP TEST
+(`vformula_tgp.txt`, which cannot be stopped), Bay Bridge and Acropolis
+(`vformula_medium.txt`, `vformula_expert.txt`), name entry
+(`vformula_name.txt`) and two MAMEs linked (`vformula_link_*.txt`, MAME's
+`-comm_localport`/`-comm_remoteport`/`-comm_framesync`). Medium, Expert and
+name entry need pokes (`scripts/m1_pokes.lua`): the race time is the 16-bit
+word at 50116c in 1/32 s (1920 holds 60 s), and the player's lap the byte at
+400eb5 (0-based; Beginner is 5 laps, so 4 is the last). With them every run
+below is all native. `seeds/vformula_snd.txt` (vr's) needed nothing more:
+`m1sndcheck` MATCH against MAME's sound log over the race (145.9 M
+instructions, 4,734 interrupts), 9,000 frames of attract (164.8 M) and the
+test mode with its sound test (208.6 M). `sound_ips` 1,042,260 (145.92 M
+instructions in the race's 140 s; attract gives 1,049,437, vr's race
+1,041,290 on the same MAME, so vr's 1,041,300 holds).
+
+No EEPROM image: MAME's `vformula` ROM_START has no `ioboard:eeprom`
+region, so its 93C46 starts blank, and the game's first boot writes its
+defaults (a store, about two frames). The ROM set first loaded vr's
+`93c45.bin`; with it the boot left MAME at frame 8 and the attract ran up
+to 4 frames apart (1,538 of 1,800 screens within 4 frames, 8 identical).
+Without it, and with the I/O board's store and latch timed (above), the
+board matches MAME.
+
+Checked against MAME frame by frame (`m1run --frames`, MAME `m1` built by
+`scripts/build_mame.sh m1` at dddd7368 with `patches/mame`), on an M4 Pro
+(64 GB, shared; 1-minute load 2 to 10 during the runs), 8 Nov 2026:
+
+| Run (scripts/inputs) | Frames | Identical to MAME |
+| --- | --- | --- |
+| attract | 9,000 | 9,000 |
+| `vformula_game.txt`: Beginner, automatic, time runs out, GAME OVER, ranking, attract | 8,000 | 8,000 |
+| `vformula_manual.txt`: Beginner, manual, GAME OVER | 8,000 | 8,000 |
+| `vformula_test.txt`: every test menu, a save, memory test, EXIT, attract | 11,400 | 11,398 |
+| `vformula_tgp.txt`: TGP TEST | 1,800 | 1,800 |
+| `vformula_link_master.txt`, `_slave.txt`: settings saved | 1,500 each | 1,500 each |
+| attract from the test run's saved NVRAM | 1,800 | 1,800 |
+
+The two test-mode frames are the brake released in the input test (MAME
+applies analogue controls at its frame callback). `m1native` over MAME's
+lockstep trace of the test run: MATCH, 397.8 M instructions, all 11,447
+screens identical at every stage. Two of our cabinets linked on localhost
+(`m1run --link-sync`, from MAME's saved NVRAM) race each other to GAME OVER;
+against two linked MAMEs the master is identical to frame 1,060 and the
+slave to 241, then the comm board's timing parts them (as for Virtua
+Racing; two linked MAMEs differ from each other too). Virtua Racing on the
+same build: attract 1,800/1,800, race 7,000/7,000, test 4,000/4,000. The
+core (`afcore_vformula`): `m1coreshot` 1,800 frames of attract, all MAME's,
+622 frames a second.
+
+Settings (EEPROM, the same layout as vr's): LINK ID at 0x0C (0 NO LINK, 1
+MASTER, 2 SLAVE; LIVE also offered), CAR NUMBER at 0x22 (0-based, eight cars);
+COURSE SELECT defaults to MAJORITY VOTE and ADVERTISE SOUND is offered (vr has
+neither). Test mode: the settings page saves only from EXIT with green, then
+YES at "SAVE THE CHANGE?".
+
+Before MAME (8 Nov 2026, M4 Pro 64 GB, m1run, about 300 fps): attract, a scripted
+race to the finish, test mode, and three linked cabinets on localhost with frame
+sync (1st/2nd/3rd of 3, the cars in their CAR NUMBER colours).

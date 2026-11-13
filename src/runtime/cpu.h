@@ -82,6 +82,12 @@ public:
     void reset();                               // MAME device_reset
     void execute_set_input(int irqline, int state);
     void check_immediate_irqs();                // take an immediate interrupt if one is waiting
+    // Save states: the architectural state below (the bus and observers stay).
+    template <typename S> void state(S &s) {
+        s(m_r), s(m_rcache), s(m_rcache_frame_addr), s(m_rcache_pos), s(m_fp);
+        s(m_SAT), s(m_PRCB), s(m_PC), s(m_AC), s(m_IP), s(m_PIP), s(m_ICR);
+        s(m_immediate_irq), s(m_immediate_vector), s(m_immediate_pri), s(m_irq_line_state);
+    }
 
     // Architectural state (MAME's names, so the transplanted code is unchanged).
     Bus *bus;

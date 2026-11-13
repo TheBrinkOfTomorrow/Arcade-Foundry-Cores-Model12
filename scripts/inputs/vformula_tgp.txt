@@ -1,0 +1,10 @@
+# Virtua Formula test mode: TGP TEST, which cannot be stopped (UNABLE TO STOP!!). 1,800 frames.
+300-309 test=1
+390-395 service=1
+436-441 service=1
+482-487 service=1
+528-533 service=1
+574-579 service=1
+620-625 service=1
+666-671 service=1
+712-717 vr4=1

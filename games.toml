@@ -8,7 +8,7 @@ set = "daytona93"
 title = "Daytona USA"
 year = 1993
 board = "model2"
-core_version = "1.2.1"
+core_version = "1.3.0"
 
 [[game]]
 set = "daytona"
@@ -16,7 +16,7 @@ title = "Daytona USA"
 year = 1994
 board = "model2"
 version = "Revision A"
-core_version = "1.2.2"
+core_version = "1.4.0"
 link = true
 
 [[game]]
@@ -25,7 +25,7 @@ title = "Sega Rally Championship"
 year = 1995
 board = "model2a"
 version = "Revision C"
-core_version = "1.2.0"
+core_version = "1.4.0"
 link = true
 
 [[game]]
@@ -34,7 +34,7 @@ title = "Manx TT Superbike"
 year = 1995
 board = "model2a"
 version = "Revision C, Twin"
-core_version = "1.2.0"
+core_version = "1.4.0"
 link = true
 
 [[game]]
@@ -42,7 +42,7 @@ set = "vcop2"
 title = "Virtua Cop 2"
 year = 1995
 board = "model2a"
-core_version = "1.1.3"
+core_version = "1.2.0"
 controls = "gun"
 
 [[game]]
@@ -51,7 +51,7 @@ title = "Virtua Cop"
 year = 1994
 board = "model2"
 version = "Revision B"
-core_version = "1.2.1"
+core_version = "1.3.0"
 controls = "gun"
 
 [[game]]
@@ -60,7 +60,7 @@ title = "Virtua Fighter 2"
 year = 1994
 board = "model2a"
 version = "Version 2.1"
-core_version = "1.1.2"
+core_version = "1.2.0"
 controls = "fighting"
 players = 2
 
@@ -70,7 +70,7 @@ title = "INDY 500"
 year = 1995
 board = "model2b"
 version = "Twin, Revision A"
-core_version = "1.2.0"
+core_version = "1.4.0"
 link = true
 
 [[game]]
@@ -79,7 +79,7 @@ title = "Fighting Vipers"
 year = 1995
 board = "model2b"
 version = "Revision D"
-core_version = "1.1.3"
+core_version = "1.2.0"
 controls = "fighting"
 players = 2
 
@@ -89,7 +89,7 @@ title = "Super GT 24h"
 year = 1996
 board = "model2b"
 version = "Jaleco"
-core_version = "1.2.0"
+core_version = "1.3.0"
 
 [[game]]
 set = "overrevb"
@@ -97,15 +97,17 @@ title = "Over Rev"
 year = 1997
 board = "model2b"
 version = "Jaleco"
-core_version = "1.1.3"
+core_version = "1.4.0"
 rom_notes = "Use the whole (non-merged) set, such as MAME's `overrevb.7z`: the split `.zip` lacks its parent's files"
+link = true
 
 [[game]]
 set = "stcc"
 title = "Sega Touring Car Championship"
 year = 1996
 board = "model2c"
-core_version = "1.1.3"
+core_version = "1.4.0"
+link = true
 
 [[game]]
 set = "von"
@@ -113,15 +115,16 @@ title = "Cyber Troopers Virtual-On"
 year = 1995
 board = "model2b"
 version = "Twin, Export"
-core_version = "1.1.3"
+core_version = "1.4.0"
 controls = "twin"
+link = true
 
 [[game]]
 set = "hotdo"
 title = "The House of the Dead"
 year = 1997
 board = "model2c"
-core_version = "1.1.3"
+core_version = "1.2.0"
 controls = "gun"
 other_names = ["hotd"]
 rom_notes = "Original set. MAME's `hotd.7z` holding it also works"
@@ -132,7 +135,7 @@ title = "Gunblade NY"
 year = 1995
 board = "model2b"
 version = "Revision A"
-core_version = "1.1.3"
+core_version = "1.2.0"
 controls = "turret"
 
 [[game]]
@@ -141,9 +144,10 @@ title = "Virtua Striker"
 year = 1994
 board = "model2b"
 version = "Revision A"
-core_version = "1.1.3"
+core_version = "1.2.0"
 controls = "fighting"
 players = 2
+category = "other"
 
 [[game]]
 set = "zerogun"
@@ -151,9 +155,10 @@ title = "Zero Gunner"
 year = 1997
 board = "model2b"
 version = "Export"
-core_version = "1.1.3"
+core_version = "1.2.0"
 controls = "fighting"
 players = 2
+category = "shooter"
 
 [[game]]
 set = "pltkids"
@@ -161,9 +166,10 @@ title = "Pilot Kids"
 year = 1998
 board = "model2b"
 version = "Revision A"
-core_version = "1.1.3"
+core_version = "1.2.0"
 controls = "fighting"
 players = 2
+category = "shooter"
 
 [[game]]
 set = "motoraid"
@@ -171,7 +177,7 @@ title = "Motor Raid"
 year = 1997
 board = "model2a"
 version = "Twin"
-core_version = "1.1.3"
+core_version = "1.2.0"
 
 [[game]]
 set = "dynamcop"
@@ -179,7 +185,7 @@ title = "Dynamite Cop"
 year = 1998
 board = "model2a"
 version = "Export"
-core_version = "1.1.3"
+core_version = "1.2.0"
 controls = "fighting"
 players = 2
 
@@ -188,7 +194,7 @@ set = "skytargt"
 title = "Sky Target"
 year = 1995
 board = "model2a"
-core_version = "1.1.3"
+core_version = "1.2.0"
 controls = "flight"
 
 [[game]]
@@ -196,7 +202,8 @@ set = "desert"
 title = "Desert Tank"
 year = 1994
 board = "model2"
-core_version = "1.1.2"
+core_version = "1.2.0"
+category = "other"
 
 [[game]]
 set = "lastbrnx"
@@ -204,7 +211,7 @@ title = "Last Bronx"
 year = 1996
 board = "model2b"
 version = "Export, Revision A"
-core_version = "1.1.3"
+core_version = "1.2.0"
 controls = "fighting"
 players = 2
 
@@ -214,7 +221,7 @@ title = "Sonic Championship"
 year = 1996
 board = "model2b"
 version = "USA"
-core_version = "1.1.3"
+core_version = "1.2.0"
 controls = "fighting"
 players = 2
 
@@ -224,9 +231,10 @@ title = "Dynamite Baseball 97"
 year = 1997
 board = "model2b"
 version = "Revision A"
-core_version = "1.0.3"
+core_version = "1.1.0"
 controls = "fighting"
 players = 2
+category = "other"
 
 [[game]]
 set = "waverunr"
@@ -234,7 +242,7 @@ title = "Wave Runner"
 year = 1996
 board = "model2c"
 version = "Japan, Revision A"
-core_version = "1.0.3"
+core_version = "1.1.0"
 
 [[game]]
 set = "segawski"
@@ -242,14 +250,14 @@ title = "Sega Water Ski"
 year = 1997
 board = "model2c"
 version = "Japan, Revision A"
-core_version = "1.0.4"
+core_version = "1.1.0"
 
 [[game]]
 set = "skisuprg"
 title = "Sega Ski Super G"
 year = 1996
 board = "model2c"
-core_version = "1.0.3"
+core_version = "1.1.0"
 stick_y = true
 
 [[game]]
@@ -257,7 +265,7 @@ set = "bel"
 title = "Behind Enemy Lines"
 year = 1997
 board = "model2c"
-core_version = "1.0.3"
+core_version = "1.1.0"
 controls = "turret"
 
 [[game]]
@@ -266,7 +274,7 @@ title = "Top Skater"
 year = 1997
 board = "model2c"
 version = "Export, Revision A"
-core_version = "1.0.3"
+core_version = "1.1.0"
 stick_y = true
 rom_notes = "Its 3D draws whole here, though not in MAME"
 
@@ -276,7 +284,7 @@ title = "Rail Chase 2"
 year = 1994
 board = "model2b"
 version = "Revision A"
-core_version = "1.1.0"
+core_version = "1.2.0"
 controls = "turret"
 players = 2
 
@@ -286,7 +294,7 @@ title = "Dead or Alive"
 year = 1996
 board = "model2b"
 version = "Revision B"
-core_version = "1.0.3"
+core_version = "1.1.0"
 controls = "fighting"
 players = 2
 other_names = ["doa"]
@@ -297,15 +305,25 @@ set = "vr"
 title = "Virtua Racing"
 year = 1992
 board = "model1"
-core_version = "1.1.1"
+core_version = "1.3.0"
 link = true
+
+[[game]]
+set = "vformula"
+title = "Virtua Formula"
+year = 1993
+board = "model1"
+core_version = "1.1.0"
+link = true
+other_names = ["vr"]
+rom_notes = "A clone of Virtua Racing: MAME's merged `vr.7z` (or `.zip`) holds its files"
 
 [[game]]
 set = "swa"
 title = "Star Wars Arcade"
 year = 1993
 board = "model1"
-core_version = "1.1.0"
+core_version = "1.2.0"
 controls = "flight"
 
 [[game]]
@@ -313,7 +331,7 @@ set = "vf"
 title = "Virtua Fighter"
 year = 1993
 board = "model1"
-core_version = "1.1.0"
+core_version = "1.2.0"
 controls = "fighting"
 players = 2
 
@@ -322,7 +340,7 @@ set = "wingwar"
 title = "Wing War"
 year = 1994
 board = "model1"
-core_version = "1.1.0"
+core_version = "1.2.0"
 controls = "flight"
 devices = ["model1io2"]
 rom_notes = "MAME's I/O board set `model1io2.zip` (or `.7z`) must sit beside it"

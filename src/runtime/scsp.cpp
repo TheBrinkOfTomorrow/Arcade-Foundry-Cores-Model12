@@ -1094,4 +1094,24 @@ void Scsp::Dsp::Start() {
     LastStep = i + 1;
 }
 
+// Save states: the registers, slots, DSP and timers (the tables made by
+// init() stay). The LFOs' table pointers and the ring buffer's write pointer
+// point into this object: saved as offsets.
+void Scsp::state(rt::StateIO &s) {
+    s.mark("SCSP");
+    s(rand_), s(irq_lines_), s(midi_out_), s(gain_), s(m_udata);
+    for (Slot &slot : m_Slots) {
+        Slot copy = slot;
+        s(copy);
+        s.inner(this, copy.PLFO.table), s.inner(this, copy.PLFO.scale);
+        s.inner(this, copy.ALFO.table), s.inner(this, copy.ALFO.scale);
+        if (s.loading() && s.ok()) slot = copy;
+    }
+    s(m_RINGBUF), s(m_BUFPTR);
+    s.inner(this, m_RBUFDST);
+    s(m_IrqTimA), s(m_IrqTimBC), s(m_IrqMidi), s(m_IrqCPU), s(m_IrqDMA), s(m_latched_MSLC), s(m_latched_MSLC_data);
+    s(m_MidiStack), s(m_MidiW), s(m_MidiR), s(m_mcieb), s(m_mcipd), s(m_TimPris), s(m_TimCnt), s(m_dma);
+    rt::state_keeping(s, m_DSP, [this](Dsp &d) { d.ram = m_DSP.ram; });
+}
+
 } // namespace snd

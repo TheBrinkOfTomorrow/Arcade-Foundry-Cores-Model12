@@ -64,6 +64,17 @@ public:
         if (tail_ - head_ == buf_.size()) grow();
         buf_[tail_++ & mask_] = v;
     }
+    // Save states: the words waiting, in order.
+    template <typename S> void state(S &s) {
+        std::vector<uint32_t> words;
+        if (s.saving())
+            for (uint32_t i = head_; i != tail_; ++i) words.push_back(buf_[i & mask_]);
+        s(words);
+        if (s.loading() && s.ok()) {
+            clear();
+            for (uint32_t w : words) push_back(w);
+        }
+    }
 
 private:
     void grow() {

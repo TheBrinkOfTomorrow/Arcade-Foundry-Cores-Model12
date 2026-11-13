@@ -14,6 +14,7 @@
 
 #include "model1/dsb_z80.h"
 #include "model1/mpeg_audio.h"
+#include "runtime/state_io.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -46,6 +47,7 @@ public:
     // seconds ("0.123456 R f0 01", "0.123457 W e0 01"), as scripts/dsb_tap.lua
     // logs MAME's.
     void set_log(std::FILE *log) { log_ = log; }
+    void state(rt::StateIO &s); // save states
 
     // dsb::Io
     uint8_t in(uint8_t port, uint64_t cycles) override;

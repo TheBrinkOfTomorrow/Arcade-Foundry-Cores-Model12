@@ -18,6 +18,7 @@
 
 #include "runtime/multipcm.h"
 #include "runtime/snd_gen_support.h"
+#include "runtime/state_io.h"
 
 #include "ymfm_opn.h"
 
@@ -76,6 +77,7 @@ public:
     int voice_channel(unsigned chip, uint8_t slot) const;
     const std::vector<uint8_t> &ram() const { return cpu_.ram; } // the 68000's work RAM, 0xf00000 on (tests)
     size_t bytes_received() const { return received_; }
+    void state(rt::StateIO &s); // save states (the volumes stay)
 
     // Devices (the 68000's view)
     uint8_t read(uint32_t addr) override;
@@ -83,6 +85,8 @@ public:
 
     // ymfm_interface
     void ymfm_set_timer(uint32_t tnum, int32_t duration_in_clocks) override;
+    enum : uint32_t { kRxEvent = 1, kTimerEvent = 2 }; // Sched tags
+    std::function<void()> event(uint32_t tag, uint64_t arg);
 
 private:
     void run_to(uint64_t count);

@@ -126,6 +126,10 @@ public:
     // 1,500 frames press test and service as an operator would: test mode,
     // GAME ASSIGNMENTS, CABINET TYPE to TWIN, and out. Other games: no-op.
     void set_cabinet_setup(bool on);
+    // Save states (afcore 5.4): the whole board between frames, written or
+    // read (StateIO). A failed read leaves the board half loaded: the core
+    // loads the state it saved before the attempt back.
+    void state(StateIO &s);
     M2Board &board() { return *board_; }
     snd::SoundBoard *sound() { return sound_.get(); } // null without the sound ROMs
     static constexpr double kFrameHz = 16000000.0 / (656.0 * 424.0); // the board's video timing
@@ -138,6 +142,7 @@ public:
     size_t fallback_entries() const { return fallback_seen_.size(); }
 
 private:
+    static constexpr int kProbeTag = 0; // Lockstep callback tags (M2Board's are its own)
     void probe();
     void no_code(); // control reached an address with no recompiled code
     FrameProfiler profiler_;

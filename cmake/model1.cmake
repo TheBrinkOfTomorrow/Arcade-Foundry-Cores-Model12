@@ -134,6 +134,7 @@ endif()
 # Stereo: metres per game unit, measured from a car's width and a plane's
 # wingspan (the others default to 1).
 set(M1_STEREO_SCALE_vr 0.8f)
+set(M1_STEREO_SCALE_vformula 0.8f) # vr's cars and scenery
 set(M1_STEREO_SCALE_wingwar 0.9f)
 if(M1_CORE)
     if(NOT M1_GEN OR NOT M1_NATIVE_TGP OR NOT M1_NATIVE_SOUND)
@@ -164,4 +165,7 @@ if(M1_CORE)
     target_compile_definitions(m1coreshot PRIVATE M2_ROMSET_ID=${M1_ROMSET})
     target_include_directories(m1coreshot PRIVATE ${CMAKE_SOURCE_DIR}/common/include)
     target_link_libraries(m1coreshot PRIVATE m1core)
+    if(UNIX AND NOT APPLE)
+        target_link_libraries(m1coreshot PRIVATE m) # sinf (--play)
+    endif()
 endif()

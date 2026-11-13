@@ -2,6 +2,7 @@
 // desktop app does around the game, without SDL or a window, for front ends
 // that bring their own (Arcade Foundry: Insert Coin's SwiftUI and SDL apps).
 #include "afcore.h"
+#include "afcommon/state.h"
 #include "audio_ring.h"
 #include "board_inputs.h"
 #include "core_versions.h"
@@ -9,6 +10,7 @@
 #include "app/link_socket.h"
 #include "runtime/game_loop.h"
 #include "runtime/rom_import.h"
+#include "runtime/state_io.h"
 #include "runtime/stereo.h"
 
 #include <algorithm>
@@ -31,6 +33,8 @@ struct afcore {
     std::string error; // the board hit something the core cannot run: it stays stopped
     rt::Stereo stereo;
     int head_idle = -1; // frames since the last head-tracked render_eyes, -1 with the clip planes closed
+    std::vector<uint8_t> state; // state_size's board, for save_state at the same frame
+    uint64_t state_frame = UINT64_MAX;
 };
 
 namespace {
@@ -239,6 +243,107 @@ int core_check_roms(const char *rom_path, char *report, size_t report_size) {
     }
 }
 
+// Save states (afcore 5.4): the board's devices (GameLoop::state, through
+// rt::StateIO) in one "M2  " chunk of afcommon/state.h's layout.
+
+constexpr uint32_t kCoreVersion = AFCORE_CORE_VERSION(M2_ROMSET_ID);
+
+std::vector<uint8_t> serialize_board(afcore *c, std::string &why) {
+    std::vector<uint8_t> out;
+    rt::StateIO s(out);
+    c->game->state(s);
+    if (!s.ok()) {
+        why = s.error();
+        out.clear();
+    }
+    return out;
+}
+
+const char *no_states(afcore *c) {
+    if (!c->error.empty()) return "the game has stopped";
+    if (c->link) return "no save states with link play";
+    return nullptr;
+}
+
+size_t write_state(afcore *c, void *buf, size_t size) {
+    afc_state_writer w;
+    afc_state_begin(&w, buf, size, M2_ROMSET, kCoreVersion, c->game->frames());
+    afc_state_chunk(&w, "M2  ");
+    afc_state_put(&w, c->state.data(), c->state.size());
+    const size_t n = afc_state_end(&w);
+    return n ? n : w.need;
+}
+
+size_t core_state_size(afcore *c) {
+    if (no_states(c)) return 0;
+    std::string why;
+    c->state = serialize_board(c, why);
+    if (c->state.empty()) return 0;
+    c->state_frame = c->game->frames();
+    return write_state(c, nullptr, 0);
+}
+
+size_t core_save_state(afcore *c, void *buf, size_t size, char *err, size_t err_size) {
+    if (const char *why = no_states(c)) {
+        set_error(err, err_size, why);
+        return 0;
+    }
+    if (c->state_frame != c->game->frames() || c->state.empty()) {
+        std::string why;
+        c->state = serialize_board(c, why);
+        if (c->state.empty()) {
+            set_error(err, err_size, why.c_str());
+            return 0;
+        }
+        c->state_frame = c->game->frames();
+    }
+    const size_t need = write_state(c, nullptr, 0);
+    if (!buf || size < need) {
+        set_error(err, err_size, "the buffer is too small: call state_size again");
+        return 0;
+    }
+    const size_t n = write_state(c, buf, size);
+    c->state = {};
+    c->state_frame = UINT64_MAX;
+    return n;
+}
+
+int core_load_state(afcore *c, const void *buf, size_t size, char *err, size_t err_size) {
+    if (const char *why = no_states(c)) {
+        set_error(err, err_size, why);
+        return -1;
+    }
+    afc_state_reader r;
+    if (afc_state_open(&r, buf, size, M2_ROMSET, kCoreVersion, err, err_size) != 0) return -1;
+    const long long n = afc_state_find(&r, "M2  ");
+    if (n <= 0) {
+        set_error(err, err_size, "the save state has no board");
+        return -1;
+    }
+    std::vector<uint8_t> board(static_cast<size_t>(n));
+    afc_state_get(&r, board.data(), board.size());
+    // A read that fails part way leaves the board half loaded: put back the
+    // board as it was.
+    std::string why;
+    const std::vector<uint8_t> before = serialize_board(c, why);
+    if (before.empty()) {
+        set_error(err, err_size, why.c_str());
+        return -1;
+    }
+    rt::StateIO s(board.data(), board.size());
+    c->game->state(s);
+    if (!s.ok() || s.left() != 0) {
+        rt::StateIO back(before.data(), before.size());
+        c->game->state(back);
+        set_error(err, err_size, ("the save state did not load: " + (s.ok() ? std::string("it has more than this board") : s.error())).c_str());
+        return -1;
+    }
+    for (auto &ring : c->audio) ring.clear(); // sound from before the load
+    c->state = {};
+    c->state_frame = UINT64_MAX;
+    return 0;
+}
+
 const afcore_api kApi = {
     AFCORE_API_VERSION, sizeof(afcore_api), AFCORE_CORE_VERSION(M2_ROMSET_ID), M2_ROMSET, rt::kGameTitle, rt::GameLoop::kFrameHz,
     rt::GameLoop::kWidth, rt::GameLoop::kHeight,
@@ -247,6 +352,11 @@ const afcore_api kApi = {
     core_render_eyes, core_eye_screen, core_hud_screen, kStereoScale,
     nullptr, // screen_surface
     core_check_roms,
+    nullptr, // options
+    nullptr, // set_option
+    core_state_size,
+    core_save_state,
+    core_load_state,
 };
 
 } // namespace

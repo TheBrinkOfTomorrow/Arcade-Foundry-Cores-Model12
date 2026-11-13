@@ -7,6 +7,7 @@
 #pragma once
 
 #include "runtime/snd_cpu.h"
+#include "runtime/state_io.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -31,10 +32,36 @@ public:
     }
     bool finished() const { return count >= end_count; }
 
-    // Run fn once `at` instructions have completed (at >= count).
-    void at(uint64_t when, std::function<void()> fn) {
-        events_.emplace(std::max(when, count), std::move(fn));
+    // Run fn once `at` instructions have completed (at >= count). tag and
+    // arg: what it is, for save states (the owner's numbers; tag 0: one a
+    // save state can't hold).
+    void at(uint64_t when, std::function<void()> fn, uint32_t tag = 0, uint64_t arg = 0) {
+        events_.emplace(std::max(when, count), Event{std::move(fn), tag, arg});
         next_count = std::min(next_count, events_.begin()->first);
+    }
+    // Save states: the counts and the events to come, each made again on
+    // load by make(tag, arg).
+    void state(rt::StateIO &s, const std::function<std::function<void()>(uint32_t, uint64_t)> &make) {
+        s.mark("SCHD");
+        s(count), s(end_count), s(next_count), s(auto_irq);
+        struct Saved {
+            uint64_t when, arg;
+            uint32_t tag, pad;
+        };
+        std::vector<Saved> saved;
+        if (s.saving())
+            for (const auto &[when, e] : events_) {
+                if (!e.tag) return s.fail("a sound board event a save state can't hold");
+                saved.push_back({when, e.arg, e.tag, 0});
+            }
+        s(saved);
+        if (s.saving() || !s.ok()) return;
+        events_.clear();
+        for (const Saved &v : saved) {
+            std::function<void()> fn = make(v.tag, v.arg);
+            if (!fn) return s.fail("a sound board event this build doesn't have");
+            events_.emplace(v.when, Event{std::move(fn), v.tag, v.arg});
+        }
     }
     // The interrupt line or mask changed: re-check at the next boundary.
     void poke() { next_count = std::min(next_count, count + 1); }
@@ -43,7 +70,7 @@ private:
     bool apply() {
         const uint32_t pc = c_.pc;
         while (!events_.empty() && events_.begin()->first <= count) {
-            auto fn = std::move(events_.begin()->second);
+            auto fn = std::move(events_.begin()->second.fn);
             events_.erase(events_.begin());
             fn();
         }
@@ -57,7 +84,12 @@ private:
     }
 
     Cpu68k &c_;
-    std::multimap<uint64_t, std::function<void()>> events_;
+    struct Event {
+        std::function<void()> fn;
+        uint32_t tag = 0;
+        uint64_t arg = 0;
+    };
+    std::multimap<uint64_t, Event> events_;
 };
 
 } // namespace snd

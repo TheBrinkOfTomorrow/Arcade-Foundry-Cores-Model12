@@ -18,6 +18,7 @@
 
 #include "model1/memory.h"
 #include "model1/replay_bus.h"
+#include "runtime/state_io.h"
 
 #include <cstdint>
 #include <memory>
@@ -69,6 +70,9 @@ public:
     // The three hashes above cost three passes over the screen a frame; the
     // core library, which never reads them, turns them off.
     void set_hashes(bool on) { hashes_ = on; }
+    // Save states: the 3D's view, its RAMs and list control, and the screen
+    // as shown; the tile layers are built again from the board's RAM.
+    void state(rt::StateIO &s);
 
     struct vec3 {
         float x = 0, y = 0, z = 0;

@@ -140,6 +140,21 @@ Copro::Copro(const std::vector<uint8_t> &program, const std::vector<uint8_t> &ta
     reset();
 }
 
+void Copro::state(rt::StateIO &s) {
+    s.mark("M1TG");
+    rt::state_keeping(s, tgp_, [this](Tgp &t) { // registers and RAM; the pointers into this board stay
+        t.bus = tgp_.bus, t.tables = tgp_.tables, t.hook = tgp_.hook;
+#ifdef M2_FAST_TGP
+        t.in_fifo = tgp_.in_fifo, t.out_fifo = tgp_.out_fifo;
+#endif
+        t.copro_ram = tgp_.copro_ram, t.copro_data = tgp_.copro_data, t.in = tgp_.in, t.out = tgp_.out;
+        t.out_time = tgp_.out_time;
+    });
+    s.fixed(ram_);
+    s(in_), s(out_), s(out_time_), s(v60_ram_adr_), s(v60_ram_latch_), s(v60_fifo_r_), s(v60_fifo_w_);
+    s(tgp_time_), s(stall_), s(halted_), s(slice_), s(sync_), s(timer_sync_), s(last_wait_);
+}
+
 void Copro::reset() {
     tgp_.reset();
     tgp_.board_reset();

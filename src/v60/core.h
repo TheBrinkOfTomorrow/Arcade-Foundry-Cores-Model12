@@ -241,6 +241,9 @@ public:
         m_flags = {};
     }
 
+    // Save states, between instructions: the registers and flags (the rest
+    // is an instruction's scratch).
+    template <typename S> void state(S &s) { s(m_reg), s(m_flags), s(m_PPC), s(m_stall_io); }
     uint32_t pc() const { return m_reg[32]; }
     void set_pc(uint32_t v) { m_reg[32] = v; }
     // PSW with the flags folded in (MAME's v60ReadPSW, without its side effect)

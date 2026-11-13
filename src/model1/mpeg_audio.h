@@ -21,6 +21,9 @@ namespace m1 {
 
 class mpeg_audio {
 public:
+	// Save states: the decoder is copied whole; this puts back the ROM it
+	// reads and its bit reader (pointers into this process).
+	void keep_rom(const mpeg_audio &live) { m_base = live.m_base, do_gb = live.do_gb; }
 	// Accepted layers.  Beware that AMM is incompatible with L2 (and
 	// not automatically recognizable) and that 2.5 implies 2.
 

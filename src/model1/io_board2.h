@@ -52,6 +52,15 @@ public:
 
     // The last timeslice end the board's timers make at or before time t
     // (attoseconds; 0: none)
+    template <typename S> void state(S &s) { // save states (the Z80's I/O hook and the clocks stay)
+        s(controls), s(eeprom), s(eeprom_dirty), s(outputs), s(port_value_), s(port_config_), s(serial_), s(cmd_);
+        s(address_), s(secondary_), s(adc_shift_), s(fpga_count_), s(ee_state_), s(ee_cs_), s(ee_clk_), s(ee_di_);
+        s(ee_locked_), s(ee_bits_), s(ee_accum_), s(ee_address_), s(ee_command_), s(ee_shift_), s(ee_completion_);
+        s(ee_cs_rise_), s(ee_cut_), s(ctc_), s(ctc_vector_), s(wdt_due_), s(ram_);
+        io2::Io *io = z_.io;
+        s(z_);
+        z_.io = io;
+    }
     __int128 latest_cut(__int128 t);
     // Runs the Z80 up to time t (a time no later than the V60's slice start)
     void run_to(__int128 t);

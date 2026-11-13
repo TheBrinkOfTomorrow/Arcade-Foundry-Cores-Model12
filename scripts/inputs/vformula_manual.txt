@@ -1,0 +1,19 @@
+# Virtua Formula: Beginner with the manual gearbox (start held with the accelerator),
+# shifting up and down; the time runs out, GAME OVER. 8,000 frames.
+600-605 coin=1
+700-705 start=1
+940-960 start=1
+950-6400 accel=0xff
+1100-1105 shiftup=1
+1250-1255 shiftup=1
+1400-1405 shiftup=1
+1550-1555 shiftup=1
+1700-1705 shiftup=1
+1850-1855 shiftup=1
+3000-3005 shiftdown=1
+3100-3105 shiftdown=1
+3200-3205 shiftdown=1
+3300-3305 shiftup=1
+3000-3050 brake=0xff
+1300-1500 wheel=0x60
+1700-1800 wheel=0xb0

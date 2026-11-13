@@ -13,8 +13,12 @@
 //     the host.
 // Untimed, ours completes a command at once. Timed (set_clock), the board
 // answers nothing before its BIOS has started: under MAME the first command
-// (written about 1.5 frames earlier) completes at kReadyTicks after reset;
-// later ones complete before the game looks.
+// (written about 9 frames after reset) completes some 38 ms after its write,
+// at a time set by the BIOS's main loop (kPass);
+// after that a latch (1) clears 7.5 ms after it was written and a store (2)
+// 35.6 ms after (about two frames: the BIOS writes the 93C46); a load (3)
+// completes at once. The data is there at once (a game reads it only once
+// the command is clear).
 //
 // EPR-14869B (Virtua Fighter, Star Wars Arcade; set_bios_b) is timed
 // differently, and ours runs its main loop (Z80 code at 004D) as accesses on
@@ -53,15 +57,25 @@ struct Controls {
 class IoBoard : public DeviceModel {
 public:
     explicit IoBoard(const std::vector<uint8_t> &eeprom);
-    // MAME: the first read of the finished command comes 2,507,400 V60
-    // cycles (9.01 frames) after reset; in 80 MHz ticks.
-    static constexpr uint64_t kReadyTicks = 2507400ull * 5;
+    // Timed: the BIOS takes the first command at its next pass after the
+    // write (passes every kPass ticks, at kPassPhase modulo kPass from
+    // reset) and completes it kReadyAfter later; 80 MHz ticks. Measured
+    // under MAME, from the game's polls of the first command (85 ticks
+    // each): Virtua Racing 36,307, Virtua Formula 36,166 (blank NVRAM) and
+    // 36,109 (saved NVRAM: the game writes 165,760 ticks sooner). Their
+    // ready times are 1 and 8 passes of 21,330 ticks (267 us) apart, and
+    // the three writes leave the pass phase a 57 us window (its middle).
+    static constexpr uint64_t kPass = 21330, kPassPhase = 410, kReadyAfter = 3067035;
     void set_clock(std::function<uint64_t()> now) { now_ = std::move(now); }
     // The board runs EPR-14869B (timed only)
     void set_bios_b() { bios_b_ = true; }
 
     // After the host replaced `eeprom` (a saved copy): the BIOS's copy at reset.
     void reload_settings();
+    template <typename S> void state(S &s) { // save states
+        s(controls), s(eeprom), s(eeprom_dirty), s(drive_commands), s(ram_), s(ready_), s(pending_), s(ready_at_);
+        s(busy_until_), s(bios_b_), s(step_), s(at_), s(base_), s(i_), s(written_), s(copy_);
+    }
 
     uint8_t ram_r(uint32_t index) const { return ram_[index & 0x7ff]; }
     void ram_w(uint32_t index, uint8_t v);
@@ -84,6 +98,8 @@ private:
     std::function<uint64_t()> now_;
     bool ready_ = false;
     int pending_ = -1;
+    uint64_t ready_at_ = UINT64_MAX; // timed: when the BIOS has the first command done
+    uint64_t busy_until_ = 0; // timed: when the latch or store command clears
 
     // EPR-14869B's main loop: where it is, and when its next access is
     void bios_b_to(uint64_t t); // its accesses MAME's V60 at time t would see done

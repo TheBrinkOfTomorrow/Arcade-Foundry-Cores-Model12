@@ -106,8 +106,13 @@ public:
     int voice_channel(unsigned, uint8_t) const { return -1; }
     const std::vector<uint8_t> &ram() const { return cpu_.ram; }
     size_t bytes_received() const { return received_; }
+    void state(rt::StateIO &s); // save states
 
     // Devices (the 68000's view)
+    enum : uint32_t { kMidiEvent = 1, kTimerEvent = 2 }; // Sched tags
+    std::function<void()> event(uint32_t tag, uint64_t arg);
+
+public:
     uint16_t read16(uint32_t addr, uint16_t mask) override;
     void write16(uint32_t addr, uint16_t data, uint16_t mask) override;
 

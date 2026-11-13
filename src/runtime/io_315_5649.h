@@ -26,6 +26,9 @@ public:
     void di_write(bool state) { di_ = state; }
     bool do_read() const;
     void set_clock(std::function<uint64_t()> ticks) { clock_ = std::move(ticks); }
+    template <typename S> void state(S &s) {
+        s(state_), s(command_), s(cs_), s(clk_), s(di_), s(locked_), s(accum_), s(bits_), s(address_), s(shift_), s(busy_until_);
+    }
 
 private:
     enum State { InReset, WaitStart, WaitCommand, Reading, WaitData, WaitCompletion };
@@ -60,6 +63,10 @@ public:
     // pedals, wheel), as the chip is set up now: what a check against a run
     // with other inputs must not compare.
     uint8_t input_bits(uint32_t offset) const;
+    template <typename S> void state(S &s) {
+        eeprom_.state(s);
+        s(port_value_), s(port_config_), s(mode_), s(analog_channel_), s(gun_mux_), s(ctrlmode_), s(drive_command_);
+    }
 
 private:
     uint8_t port_in(uint32_t port);

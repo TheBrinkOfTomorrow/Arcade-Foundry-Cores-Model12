@@ -370,10 +370,14 @@ endif()
 if(EXISTS ${GEN_DIR}/gen_table.cpp AND EXISTS ${TGP_GEN} AND EXISTS ${SND_GEN} AND (NOT DSB_GEN OR EXISTS "${DSB_GEN}"))
 
     file(GLOB GEN_SOURCES ${GEN_DIR}/*.cpp)
-    add_executable(m2native tools/m2native/main.cpp ${GEN_SOURCES} ${TGP_GEN} ${SND_GEN} ${DSB_GEN})
+    # The coprocessor and sound code first: each is one large function in one
+    # file, the longest compiles of a core, so they start before the i960
+    # chunks instead of running alone at the end of the build (#46).
+    set(M2_GEN_ALL ${TGP_GEN} ${SND_GEN} ${DSB_GEN} ${GEN_SOURCES})
+    add_executable(m2native tools/m2native/main.cpp ${M2_GEN_ALL})
     target_link_libraries(m2native PRIVATE runtime)
     # The game on its own: native board runtime, no trace.
-    add_executable(m2run tools/m2run/main.cpp src/app/link_socket.cpp ${GEN_SOURCES} ${TGP_GEN} ${SND_GEN} ${DSB_GEN})
+    add_executable(m2run tools/m2run/main.cpp src/app/link_socket.cpp ${M2_GEN_ALL})
     target_link_libraries(m2run PRIVATE runtime)
     if(WIN32)
         target_link_libraries(m2run PRIVATE ws2_32) # link play's sockets
@@ -381,7 +385,7 @@ if(EXISTS ${GEN_DIR}/gen_table.cpp AND EXISTS ${TGP_GEN} AND EXISTS ${SND_GEN} A
 
     # The game in a window (needs the app objects below).
     if(TARGET daytona_app)
-        add_executable(daytona WIN32 $<TARGET_OBJECTS:daytona_app> ${GEN_SOURCES} ${TGP_GEN} ${SND_GEN} ${DSB_GEN})
+        add_executable(daytona WIN32 $<TARGET_OBJECTS:daytona_app> ${M2_GEN_ALL})
         target_link_libraries(daytona PRIVATE runtime imgui gpurender ${M2_SDL_TARGET})
         if(M2_ROMSET STREQUAL "srallyc")
             set_target_properties(daytona PROPERTIES OUTPUT_NAME segarally) # Sega Rally's build
@@ -448,7 +452,7 @@ if(EXISTS ${GEN_DIR}/gen_table.cpp AND EXISTS ${TGP_GEN} AND EXISTS ${SND_GEN} A
             target_link_libraries(daytona PRIVATE ws2_32) # link play's sockets
         endif()
         # Headless frames through the hardware renderer, to compare with m2run's.
-        add_executable(m2gpushot tools/m2gpushot/main.cpp ${GEN_SOURCES} ${TGP_GEN} ${SND_GEN} ${DSB_GEN})
+        add_executable(m2gpushot tools/m2gpushot/main.cpp ${M2_GEN_ALL})
         target_link_libraries(m2gpushot PRIVATE runtime gpurender)
     else()
         message(STATUS "extern/sdl3 not found: skipping the windowed game (run scripts/setup.py)")
@@ -457,7 +461,7 @@ if(EXISTS ${GEN_DIR}/gen_table.cpp AND EXISTS ${TGP_GEN} AND EXISTS ${SND_GEN} A
     # other front ends: a shared library (a framework on Apple) that exports
     # only afcore_api_<romset>, so several games share a process.
     if(M2_CORE)
-        add_library(m2core SHARED src/core/m2core.cpp src/runtime/stereo.cpp src/app/link_socket.cpp ${GEN_SOURCES} ${TGP_GEN} ${SND_GEN} ${DSB_GEN})
+        add_library(m2core SHARED ${M2_GEN_ALL} src/core/m2core.cpp src/runtime/stereo.cpp src/app/link_socket.cpp)
         target_include_directories(m2core PUBLIC ${CMAKE_SOURCE_DIR}/common/include)
         target_compile_definitions(m2core PRIVATE AFCORE_BUILD M2_ROMSET_ID=${M2_ROMSET})
         target_link_libraries(m2core PRIVATE runtime)
@@ -478,6 +482,9 @@ if(EXISTS ${GEN_DIR}/gen_table.cpp AND EXISTS ${TGP_GEN} AND EXISTS ${SND_GEN} A
         add_executable(m2coreshot tools/m2coreshot/main.c)
         target_compile_definitions(m2coreshot PRIVATE M2_ROMSET_ID=${M2_ROMSET})
         target_link_libraries(m2coreshot PRIVATE m2core)
+        if(UNIX AND NOT APPLE)
+            target_link_libraries(m2coreshot PRIVATE m) # sinf (--play)
+        endif()
     endif()
     if(NOT MSVC)
         set_source_files_properties(${GEN_SOURCES} ${TGP_GEN} ${SND_GEN} ${DSB_GEN} PROPERTIES COMPILE_OPTIONS "-Wno-unused-label")
@@ -592,6 +599,10 @@ add_test(NAME native_sound_sequencer COMMAND test_native_sound_sequencer)
 add_executable(test_comm_board tests/test_comm_board.cpp src/runtime/comm_board.cpp)
 target_include_directories(test_comm_board PRIVATE src)
 add_test(NAME comm_board COMMAND test_comm_board)
+add_executable(test_link_slack tests/test_link_slack.cpp src/runtime/comm_board.cpp)
+target_include_directories(test_link_slack PRIVATE src)
+target_link_libraries(test_link_slack PRIVATE Threads::Threads)
+add_test(NAME link_slack COMMAND test_link_slack)
 
 # Wheel and pedal bindings against SDL virtual joysticks.
 if(TARGET SDL3::SDL3-static)

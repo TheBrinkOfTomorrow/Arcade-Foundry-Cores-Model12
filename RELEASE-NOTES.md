@@ -2,6 +2,43 @@
 
 Newest first. Each release is also on the repository's Releases page.
 
+## 1.3.0 (2026-11-12)
+
+**Arcade Foundry Cores: Model 1 and 2 1.3.0**
+
+The Model 1 and Model 2 cores as shipped with Insert Coin 1.3.0.
+
+- Save states (afcore 5.4: `state_size`, `save_state`, `load_state`) for
+  every Model 1 and Model 2 game, for the app's save slots and Resume. A
+  game loaded from a state plays on exactly as if it had never stopped:
+  the same screen and sound on every frame. Not during link play. Every
+  game's core version is up a minor version (a state loads only in the core
+  version that saved it).
+- Link play for three more Model 2 games, with no change to the board:
+  Sega Touring Car Championship, Over Rev and Cyber Troopers Virtual-On
+  (core 1.3.0). Tested on one Mac with 2 and 3 cores in one race (STCC),
+  2 in one race (Over Rev) and a 2-cabinet versus (Virtual-On). Super GT
+  24h links but stops at the linked course select, so it stays single.
+- New game: Virtua Formula (`vformula`, 1993), Virtua Racing's attraction
+  version for up to eight linked cockpits. It reads its ROMs from MAME's merged
+  `vr` set. Core 1.0.1. The motion seats and camera feeds aren't emulated;
+  the game doesn't need them. Checked against MAME frame by frame: attract,
+  a race to game over, test mode and a boot from saved settings are
+  identical. It now starts with a blank settings EEPROM, as MAME does,
+  instead of Virtua Racing's.
+- Model 1 I/O board: the controls latch and the settings store take as
+  long as under MAME, and the board comes up when MAME's does, so a boot from
+  saved settings and test mode stay on MAME's frames (Virtua Racing and
+  Virtua Formula).
+- Link play with frame sync stays at full speed when the network is slower
+  than a frame: the master cabinet may run a few frames ahead of the ring
+  (4 by default, `AF_LINK_SLACK`). On Wi-Fi a 3-cabinet INDY 500 ran at
+  about 47 of 57.5 fps before. Virtua Racing 1.2.0, Daytona USA, Sega Rally,
+  Manx TT and INDY 500 1.3.0.
+- **Game categories:** the app's library groups games by category, taken
+  from each game's controls; games.toml sets one by hand where the controls
+  give the wrong answer.
+
 ## 1.2.0 (2026-11-06)
 
 **Arcade Foundry Cores: Model 1 and 2 1.2.0**

@@ -168,6 +168,15 @@ sound board. Cross builds (iOS, tvOS, arm64 Linux) run `--gen-only` on the
 host and build the generated code with the target's toolchain. Everything
 the build writes stays under `build/`, which git ignores.
 
+Build time (#46). The i960 program is split into chunk files that compile
+in parallel. The geometry and sound programs are one large function each,
+in one file, and are the longest compiles of a core, so CMake lists them
+first (`M2_GEN_ALL`) and they start alongside the chunks instead of running
+alone at the end. A core build configures without the windowed app
+(`M2_APP=OFF`), so CMake does not set up SDL3, which the core never uses.
+Rail Chase 2 on 4 cores went from 250 s to 196 s, with the same core
+output.
+
 ### Seeds
 
 The recompiler follows every direct branch and call; indirect ones (`bx`,
@@ -330,10 +339,38 @@ The link board (`src/runtime/comm_board`, MAME's m2comm in its simulation
 mode) is shared RAM the cabinets pass round a ring. Each cabinet listens
 for the one before it and connects to the next over TCP (`app::TcpLink`),
 started by the core's `link_start`; frame synchronisation is optional. The
-game's own test mode picks each cabinet's role. Daytona USA Revision A,
+game's own test mode picks each cabinet's role.
+
+Frame synchronisation (MAME's `-comm_framesync`) holds the cabinets
+together with a sync token (vsync, 0xFC) the master sends round the ring
+each frame: a slave waits for it, and in MAME the master waits for it to
+come back before its next frame. That costs a whole lap of the ring every
+frame. On Wi-Fi a lap is often longer than a frame (17.4 ms): the first
+3-cabinet INDY 500 race (2026-11-08, an Apple TV and an iPad on Wi-Fi,
+an M4 Pro Mac (64 GB) wired) ran at a median 47 of 57.5 fps with dips to 20, while the
+same race all wired ran at 57–58. Since the cores' 1.3.0, the master may
+run up to `link_slack` frames (4 by default; `AF_LINK_SLACK` sets it, 0
+is MAME's) ahead of its tokens coming back, and a slave that was held up
+takes every token that has come, so it catches up. A slow lap then delays
+what the cabinets see of each other by a few frames instead of slowing
+every one. `tests/test_link_slack` runs three boards on threads over
+cables 12 ms a hop (a 36 ms lap): about 28 fps with no slack, 57.5 with
+the default. A pause longer than the slack (a Wi-Fi stall of hundreds of
+milliseconds) still holds everyone until it passes. The Model 1 board
+(`src/model1/comm_board`) does the same. Daytona USA Revision A,
 Sega Rally and INDY 500 are tested with several cabinets; Daytona USA '93
-uses an older protocol that is not supported. The app's LINK_PLAY.md says
-which games link and how to set them up.
+uses an older protocol that is not supported. Since 2026-11-09 Sega
+Touring Car Championship (2 and 3 cores, one race), Over Rev (2 cores, one
+race) and Cyber Troopers Virtual-On (2 cores; a cabinet that joins
+mid-game is offered ENGAGE OTHER PLAYER and the two fight) link too, on
+the same board with no game-specific code; each is set in its own test
+mode (STCC: GAME ASSIGNMENTS, LINK TYPE CAR n; Over Rev: GAME
+ASSIGNMENTS, FOUNDATIONAL SETTING, LINK MAX and LINK TYPE; Virtual-On:
+GAME ASSIGNMENTS, NETWORK LINK ATTRIBUTE MASTER or SLAVE). Super GT 24h
+comes up linked (LINKED, CAR No.1 MASTER) but every cabinet stays on the
+linked course select, so it is not offered yet; Desert Tank never starts
+its board (its test mode has no link setting). The app's LINK_PLAY.md
+says which games link and how to set them up.
 
 ### The core library
 
@@ -352,6 +389,50 @@ it never does), and the frame ends when the vblank handler returns. On the
 2A, 2B and 2C boards the board's timers run on board time kept in 25 MHz
 ticks, because Sega Rally and later games run their game timing and send
 their sound commands from them.
+
+### Save states
+
+afcore 5.4's `state_size`, `save_state` and `load_state` (the app's save
+slots and Resume, its docs/design/SAVE-STATES.md) save the whole board
+between two frames. Each device has a `state(rt::StateIO &)` (`src/runtime/state_io.h`)
+that names, in order, what it keeps from one frame to the next; the same
+call writes the bytes or reads them back. `GameLoop::state` walks them:
+
+- the loop's own counters, the i960's registers, and Lockstep's count and
+  events to come. A Lockstep callback is a `std::function`, so each one is
+  added with a tag (the probe, the sound UART's shift) and made again from
+  its tag on load;
+- the board's RAM (read back in place, as the page table points into it),
+  interrupt controller, timers and board time, the UART, the I/O board or
+  315-5649 and its 93C46, the comm board fitted with no link (Super GT 24h,
+  Over Rev), the 315-5881 and 317-0229 chips;
+- the TGP, SHARC or TGPx4 with its FIFOs and the buffer RAM, the
+  geometrizer's state and RAM and the last frame's polygons (a 30 Hz
+  frame shows them again);
+- the video's pens, CRTC offsets and the screen as shown. Its caches are
+  not saved: on load a new Video is built in place from the board's RAM
+  (with a new `instance()`, so a GPU renderer uploads everything again) and
+  keeps the front end's settings and rasterizer threads;
+- the sound board: the 68000's registers and RAM, the scheduler's events
+  (tagged like Lockstep's: a byte on the line, a timer), and the SCSP, or
+  the YM3438 (ymfm's own `save_restore`) and both MultiPCMs; the DSB's Z80
+  and MPEG decoder, the DSB2's 68000, and Manx TT's second board.
+
+Plain structs (the TGP, the SHARC's and SCSP's state, the Z80) are copied
+whole, with the pointers their owner set put back (`state_keeping`), and a
+pointer into the device itself is saved as an offset. A `mark` between
+devices stops a state read out of step. The core puts the bytes in one
+`M2  ` chunk of `afcommon/state.h`'s layout with the set and core version;
+a state from another core version is refused, and a load that fails part
+way puts back the board saved just before. There are no states during link
+play (the other cabinets aren't saved) or after the board has stopped.
+
+The bytes are the build's own struct layouts, so a state loads in the same
+core version on the same kind of machine. Sega Rally's state is 9.7 MB, 1.6
+MB deflated (the app deflates it). `tests/save_state_check.sh` runs a set
+three times with the same inputs (`m2coreshot --play`): straight through,
+saving a state after frame N, and from that state; every frame after N
+must have the same screen and sound in all three.
 
 ### Enhancements
 
@@ -425,6 +506,8 @@ still in the tree, off by default. The PS Vita, Dreamcast, Android and iOS
 - **In CI.** Pull requests get the release scan, `gen_games.py --check`
   and a ROM-free Linux build with the tests. The ROM runs happen in the
   app's nightly on a self-hosted runner.
+- **Save states.** `tests/save_state_check.sh BUILD SET.zip N FRAMES` (see
+  Save states above), on each board and sound board variant.
 - **In the app.** `m2coreshot SET FRAMES --hashes` runs a core through
   afcore and prints a hash per frame. Device results go into the app's
   compatibility table.
@@ -449,6 +532,8 @@ What changed from the Daytona design, and why:
   results.
 - **One game list** (`games.toml`, #33), audio ring buffers (#36) and
   table-driven inputs (#35), all with no change to what a game does.
+- **Save states** (afcore 5.4, November 2026): every device got a
+  `state()`, and Lockstep's and the sound scheduler's callbacks a tag.
 - **Native audio** (a sequencer-based replacement for Daytona's sound
   board, experimental) is used only by the desktop build; the cores play
   the recompiled sound board.
@@ -463,7 +548,11 @@ What changed from the Daytona design, and why:
 - The geometrizer is MAME's high-level version; its real microcode is not
   dumped.
 - `M2_DC_SPEED` code left from the Dreamcast port, to remove.
-- Link play beyond the tested games (Manx TT, Motor Raid).
+- Link play beyond the tested games: Motor Raid; Super GT 24h (stops at
+  the linked course select); Desert Tank (never starts its board).
+- Build time (#46): the tools and board libraries are built again for
+  every set, and the geometry and sound programs could be split into chunks
+  like the i960's.
 
 ## Decisions
 

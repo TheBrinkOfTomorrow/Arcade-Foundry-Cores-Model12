@@ -23,6 +23,7 @@
 #include "runtime/m2_tgp_board.h"
 #include "runtime/video.h"
 #include "runtime/scenery.h"
+#include "runtime/state_io.h"
 
 #include <array>
 #include <cstdint>
@@ -227,6 +228,7 @@ public:
     std::vector<uint8_t> drive_commands; // written to byte 0x11 since last taken (at most kMaxDrive kept)
     static constexpr size_t kMaxDrive = 256;
     IoBoard() { ram_.fill(0); eeprom.fill(0xff); }
+    template <typename S> void state(S &s) { s(inputs), s(eeprom), s(eeprom_dirty), s(drive_commands), s(ram_); }
 
 private:
     std::array<uint8_t, 0x800> ram_;
@@ -308,6 +310,11 @@ public:
     // nullptr: no link, the registers stay plain). Set before the game runs.
     void set_link(LinkTransport *transport, bool framesync = false);
     const CommBoard *comm_board() const { return comm_board_.get(); }
+    // Save states: every device's state and RAM (ROM images are not saved).
+    void state(StateIO &s);
+    // The board's Lockstep callback with this tag (add_callback), for a load.
+    std::function<void()> lockstep_callback(int tag);
+    static constexpr int kUartTag = 1;
 #ifdef M2_DC_SPIN_SKIP
     uint64_t spin_skipped() const { return spin_skipped_; } // instructions skipped in the frame wait (read_byte)
 #endif

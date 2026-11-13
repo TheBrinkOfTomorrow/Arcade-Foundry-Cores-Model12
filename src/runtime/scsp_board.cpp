@@ -29,9 +29,7 @@ ScspBoard::ScspBoard(const std::vector<uint8_t> &program, const std::vector<uint
     scsp_.on_timer = [this](int n, double seconds) {
         const uint64_t gen = ++timer_gen_[n];
         const uint64_t at = sched_.count + uint64_t(std::llround(seconds * double(kIps)));
-        sched_.at(at, [this, n, gen] {
-            if (gen == timer_gen_[n]) scsp_.timer_expired(n);
-        });
+        sched_.at(at, event(kTimerEvent, uint64_t(n) | gen << 8), kTimerEvent, uint64_t(n) | gen << 8);
     };
 }
 
@@ -86,6 +84,42 @@ std::vector<float> ScspBoard::take_fm() {
 }
 #endif
 
+std::function<void()> ScspBoard::event(uint32_t tag, uint64_t arg) {
+    if (tag == kMidiEvent)
+        return [this, b = uint8_t(arg)] {
+            scsp_.midi_in(b);
+            ++received_;
+        };
+    if (tag == kTimerEvent)
+        return [this, n = int(arg & 0xff), gen = arg >> 8] {
+            if (gen == timer_gen_[n]) scsp_.timer_expired(n);
+        };
+    return nullptr;
+}
+
+void ScspBoard::state(rt::StateIO &s) {
+    s.mark("SND ");
+    cpu_.state(s);
+    sched_.state(s, [this](uint32_t tag, uint64_t arg) { return event(tag, arg); });
+    scsp_.state(s);
+    s(carry_), s(line_free_), s(received_), s(timer_gen_), s(rendered_), s(out_);
+#if M2_DSB
+    bool dsb = dsb_ != nullptr;
+    s(dsb);
+    if (dsb != (dsb_ != nullptr)) return s.fail("the save state's sound boards are another build's");
+    if (dsb_) dsb_->state(s);
+#endif
+#if M2_M1SND
+    bool m1 = m1_ != nullptr;
+    s(m1);
+    if (m1 != (m1_ != nullptr)) return s.fail("the save state's sound boards are another build's");
+    if (m1_) {
+        m1_->state(s);
+        s(m1_fm_), s(m1_pcm_), s(m1_fm_out_), s(m1_pcm_out_);
+    }
+#endif
+}
+
 void ScspBoard::send(const uint8_t *bytes, size_t n) {
     constexpr uint64_t kByteTime = kIps * kByteBits / kBaud; // instructions per byte on the line
 #if M2_M1SND
@@ -98,10 +132,7 @@ void ScspBoard::send(const uint8_t *bytes, size_t n) {
 #if M2_DSB
         if (dsb_) dsb_->receive(b, double(at) / double(kIps)); // the same line, its stop bit at the same time
 #endif
-        sched_.at(at, [this, b] {
-            scsp_.midi_in(b);
-            ++received_;
-        });
+        sched_.at(at, event(kMidiEvent, b), kMidiEvent, b);
     }
 }
 

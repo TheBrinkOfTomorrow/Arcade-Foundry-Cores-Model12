@@ -44,6 +44,14 @@ public:
 
     // iomap_le, by byte offset in the 64 KB window: 0 ready, 8 address low,
     // 0xa address high, 0xc subkey, 0xe the decrypted stream.
+    // Save states: the decryption's progress (the key and the reader stay).
+    template <typename S> void state(S &s) {
+        s.bytes(buffer.get(), BUFFER_SIZE), s.bytes(line_buffer.get(), LINE_SIZE), s.bytes(line_buffer_prev.get(), LINE_SIZE);
+        s(first_read), s(prot_cur_address), s(subkey), s(dec_hist), s(dec_header), s(enc_ready);
+        s(buffer_pos), s(line_buffer_pos), s(line_buffer_size), s(buffer_bit), s(buffer_bit2), s(buffer2), s(buffer2a);
+        s(block_size), s(block_pos), s(block_numlines), s(done_compression);
+    }
+
     uint16_t read16(uint32_t offset) {
         switch (offset & 0xfffe) {
         case 0x0: return ready_r();

@@ -78,6 +78,10 @@ public:
     uint8_t *backup_ram() { return mem_.ram(0x400000); }
     static constexpr size_t kBackupBytes = 0x10000;
 
+    // Save states (afcore 5.4), between frames: every device and the board's
+    // clocks, written or read (rt::StateIO); see docs/design/MODEL1.md.
+    void state(rt::StateIO &s);
+
     uint32_t dev_read(uint32_t a, unsigned size, unsigned space) override;
     void dev_write(uint32_t a, uint32_t v, unsigned size, unsigned space) override;
 

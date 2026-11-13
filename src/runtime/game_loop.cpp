@@ -73,7 +73,7 @@ GameLoop::GameLoop(M2Board::Images img, bool sound_enabled) {
     board_->attach(*cpu_, *ls_);
     cpu_->reset();
     env_ = std::make_unique<gen::Env>(gen::Env{*cpu_, *ls_});
-    ls_->add_callback(kProbe, [this] { probe(); });
+    ls_->add_callback(kProbe, [this] { probe(); }, kProbeTag);
 }
 
 void GameLoop::probe() {
@@ -106,7 +106,7 @@ void GameLoop::probe() {
             if (due < next_vblank_tick_) {
                 board_->skip_to(due);
                 board_->fire_timers();
-                ls_->add_callback(ls_->count + kProbe, [this] { probe(); });
+                ls_->add_callback(ls_->count + kProbe, [this] { probe(); }, kProbeTag);
                 return;
             }
             board_->skip_to(next_vblank_tick_);
@@ -122,7 +122,7 @@ void GameLoop::probe() {
             vblank_start_ = ls_->count;
         }
     }
-    ls_->add_callback(ls_->count + kProbe, [this] { probe(); });
+    ls_->add_callback(ls_->count + kProbe, [this] { probe(); }, kProbeTag);
 }
 
 void GameLoop::run_frame(const Inputs &inputs) {
@@ -146,6 +146,25 @@ uint64_t GameLoop::SoundPacket::execute() {
     sound_->advance(1.0 / kFrameHz);
     const uint64_t end = clock_ ? clock_() : 0;
     return end >= begin ? end - begin : 0;
+}
+
+void GameLoop::state(StateIO &s) {
+    s.mark("LOOP");
+    if (sound_frame_pending_) return s.fail("a sound frame is still running");
+    s(inputs_), s(in_vblank_), s(frame_done_), s(frame_start_), s(vblank_start_), s(frames_), s(next_vblank_tick_);
+    s(cabinet_setup_), s(interpreted_);
+    s.mark("I960");
+    cpu_->state(s);
+    ls_->state(s, [this](int tag) -> std::function<void()> {
+        if (tag == kProbeTag) return [this] { probe(); };
+        return board_->lockstep_callback(tag);
+    });
+    board_->state(s);
+    bool sound = sound_ != nullptr;
+    s(sound);
+    if (sound != (sound_ != nullptr)) return s.fail("the save state was made with the sound board on or off, not as now");
+    if (sound_) sound_->state(s);
+    s.mark("END ");
 }
 
 void GameLoop::set_cabinet_setup(bool on) {
